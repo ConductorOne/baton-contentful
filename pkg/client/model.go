@@ -36,6 +36,7 @@ type SystemInfo struct {
 	CreatedBy Link      `json:"createdBy"`
 	UpdatedBy Link      `json:"updatedBy"`
 	Org       Link      `json:"organization"`
+	Team      Link      `json:"team"`
 	Space     Link      `json:"space"`
 	User      Link      `json:"user"`
 
@@ -44,7 +45,8 @@ type SystemInfo struct {
 	Status       string      `json:"status"`
 	SSO          interface{} `json:"sso"`
 
-	// only for team memberships: https://www.contentful.com/developers/docs/references/user-management-api/#/reference/team-memberships
+	// only for team memberships endpoint calls
+	// https://www.contentful.com/developers/docs/references/user-management-api/#/reference/team-memberships
 	OrganizationMembership Link `json:"organizationMembership"`
 }
 

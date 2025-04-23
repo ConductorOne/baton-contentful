@@ -123,8 +123,56 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 	return rv, nextOffset, nil, nil
 }
 
-// grant
-// https://www.contentful.com/help/users-and-teams/teams/add-team-members/
+func (o *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+	teamId := entitlement.Resource.Id.Resource
+	res, err := o.client.GetOrganizationMembershipByUser(ctx, principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.Items) == 0 {
+		return nil, fmt.Errorf("no org membership found for user %s", principal.Id.Resource)
+	}
+
+	orgMembershipID := res.Items[0].Sys.ID
+	_, err = o.client.CreateTeamMembership(ctx, teamId, orgMembershipID)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (o *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	principal := grant.Principal
+	entitlement := grant.Entitlement
+	teamID := entitlement.Resource.Id.Resource
+
+	resOrgMembership, err := o.client.GetOrganizationMembershipByUser(ctx, principal.Id.Resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get org membership: %w", err)
+	}
+
+	if len(resOrgMembership.Items) == 0 {
+		return nil, fmt.Errorf("no org membership found for user %s", principal.Id.Resource)
+	}
+
+	orgMembershipID := resOrgMembership.Items[0].Sys.ID
+	resTeamMembership, err := o.client.GetTeamMembershipByUser(ctx, orgMembershipID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get team membership: %w", err)
+	}
+
+	if len(resTeamMembership.Items) == 0 {
+		return nil, fmt.Errorf("no team membership found for user %s", principal.Id.Resource)
+	}
+
+	teamMembershipID := resTeamMembership.Items[0].Sys.ID
+	err = o.client.DeleteTeamMembership(ctx, teamID, teamMembershipID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete team membership: %w", err)
+	}
+	return nil, nil
+}
 
 func newTeamBuilder(client *client.Client) *teamBuilder {
 	return &teamBuilder{
