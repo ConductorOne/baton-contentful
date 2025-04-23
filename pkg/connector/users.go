@@ -50,13 +50,13 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 
 	var offset int
 	var err error
-
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
 			return nil, "", nil, err
 		}
 	}
+
 	res, err := o.client.ListUsers(ctx, offset)
 	users := res.Items
 	if err != nil {

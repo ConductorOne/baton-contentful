@@ -142,6 +142,31 @@ func (o *orgBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *
 	return rv, nextOffset, nil, nil
 }
 
+// can't provision organization membership, it requires creating an account
+// https://www.contentful.com/developers/docs/references/user-management-api/#/reference/organization-memberships
+func (o *orgBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+	return nil, nil
+}
+
+func (o *orgBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	principal := grant.Principal
+
+	resOrgMembership, err := o.client.GetOrganizationMembershipByUser(ctx, principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+	if len(resOrgMembership.Items) == 0 {
+		return nil, fmt.Errorf("organization membership not found for user %s", principal.Id.Resource)
+	}
+
+	orgMembershipID := resOrgMembership.Items[0].Sys.ID
+	err = o.client.DeleteOrganizationMembership(ctx, orgMembershipID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete organization membership %s: %w", orgMembershipID, err)
+	}
+	return nil, nil
+}
+
 func newOrgBuilder(client *client.Client) *orgBuilder {
 	return &orgBuilder{
 		client: client,
