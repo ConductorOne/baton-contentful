@@ -68,9 +68,9 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(users))
 
-	rv := make([]*v2.Resource, len(users))
-	for i, user := range users {
-		rv[i] = userResource(user)
+	rv := []*v2.Resource{}
+	for _, user := range users {
+		rv = append(rv, userResource(user))
 	}
 
 	return rv, nextOffset, nil, nil

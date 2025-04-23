@@ -9,7 +9,6 @@ type Response struct {
 	Sys   SystemInfo `json:"sys"`
 }
 
-// Response represents the top-level JSON structure
 type GetUsersResponse struct {
 	Response
 	Items []User `json:"items"`
@@ -37,6 +36,16 @@ type SystemInfo struct {
 	CreatedBy Link      `json:"createdBy"`
 	UpdatedBy Link      `json:"updatedBy"`
 	Org       Link      `json:"organization"`
+	Space     Link      `json:"space"`
+	User      Link      `json:"user"`
+
+	// these are only for org memberships
+	LastActiveAt *time.Time  `json:"lastActiveAt"`
+	Status       string      `json:"status"`
+	SSO          interface{} `json:"sso"`
+
+	// only for team memberships: https://www.contentful.com/developers/docs/references/user-management-api/#/reference/team-memberships
+	OrganizationMembership Link `json:"organizationMembership"`
 }
 
 type Link struct {
@@ -78,4 +87,65 @@ type Team struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	Sys         SystemInfo `json:"sys"`
+}
+
+type GetSpaceRolesResponse struct {
+	Response
+	Items []Role `json:"items"`
+}
+
+type Role struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Policies    []Policy    `json:"policies"`
+	Permissions Permissions `json:"permissions"`
+	Sys         SystemInfo  `json:"sys"`
+}
+
+type Policy struct {
+	Effect     string         `json:"effect"`
+	Actions    any            `json:"actions"` // Can be string "all" or []string
+	Constraint map[string]any `json:"constraint"`
+}
+
+type Permissions struct {
+	ContentModel    []string `json:"ContentModel"`
+	Settings        []string `json:"Settings"`
+	ContentDelivery any      `json:"ContentDelivery"` // Can be string "all" or []string
+}
+
+type GetOrganizationMembershipsResponse struct {
+	Response
+	Items []OrganizationMembership `json:"items"`
+}
+
+type OrganizationMembership struct {
+	Role                       string     `json:"role"`
+	IsExemptFromRestrictedMode bool       `json:"isExemptFromRestrictedMode"`
+	Sys                        SystemInfo `json:"sys"`
+}
+
+type GetSpaceMembershipsResponse struct {
+	Response
+	Items []SpaceMembership `json:"items"`
+}
+
+type SpaceMembership struct {
+	Admin bool       `json:"admin"`
+	Sys   SystemInfo `json:"sys"`
+	Roles []LinkRole `json:"roles"`
+}
+
+type LinkRole struct {
+	Name string  `json:"name"`
+	Sys  LinkSys `json:"sys"`
+}
+
+type GetTeamMembershipsResponse struct {
+	Response
+	Items []TeamMembership `json:"items"`
+}
+
+type TeamMembership struct {
+	Sys SystemInfo `json:"sys"`
 }

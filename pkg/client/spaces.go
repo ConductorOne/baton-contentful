@@ -38,3 +38,64 @@ func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse
 
 	return &res, nil
 }
+
+// https://www.contentful.com/developers/docs/references/user-management-api/#/reference/space-roles
+// https://www.contentful.com/help/roles/space-roles-and-permissions/
+func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string) (*GetSpaceRolesResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces/%s/roles", BaseURL, spaceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
+	}
+
+	var res GetSpaceRolesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func (c *Client) ListSpaceMemberships(ctx context.Context, spaceID string, offset int) (*GetSpaceMembershipsResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces/%s/space_memberships", BaseURL, spaceID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	url := req.URL.Query()
+	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
+	url.Set("skip", fmt.Sprintf("%d", offset))
+	req.URL.RawQuery = url.Encode()
+
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
+	}
+
+	var res GetSpaceMembershipsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}

@@ -9,7 +9,16 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
+	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
+)
+
+const (
+	orgOwner     = "owner"
+	orgAdmin     = "admin"
+	orgDeveloper = "developer"
+	orgMember    = "member"
 )
 
 type orgBuilder struct {
@@ -56,22 +65,81 @@ func (o *orgBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, 
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
-	rv := make([]*v2.Resource, len(res.Items))
-	for i, user := range res.Items {
-		rv[i] = orgResource(user)
+	rv := []*v2.Resource{}
+	for _, org := range res.Items {
+		rv = append(rv, orgResource(org))
 	}
 
 	return rv, nextOffset, nil, nil
 }
 
-// Entitlements always returns an empty slice for users.
 func (o *orgBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
+	// owner, admin, developer, member
+	return []*v2.Entitlement{
+		entitlement.NewAssignmentEntitlement(
+			resource,
+			orgOwner,
+			entitlement.WithGrantableTo(userResourceType),
+			entitlement.WithDescription(fmt.Sprintf("Owner of the %s organization", resource.DisplayName)),
+			entitlement.WithDisplayName(fmt.Sprintf("Owner of the %s organization", resource.DisplayName)),
+		),
+		entitlement.NewAssignmentEntitlement(
+			resource,
+			orgAdmin,
+			entitlement.WithGrantableTo(userResourceType),
+			entitlement.WithDescription(fmt.Sprintf("Admin of the %s organization", resource.DisplayName)),
+			entitlement.WithDisplayName(fmt.Sprintf("Admin of the %s organization", resource.DisplayName)),
+		),
+		entitlement.NewAssignmentEntitlement(
+			resource,
+			orgDeveloper,
+			entitlement.WithGrantableTo(userResourceType),
+			entitlement.WithDescription(fmt.Sprintf("Developer of the %s organization", resource.DisplayName)),
+			entitlement.WithDisplayName(fmt.Sprintf("Developer of the %s organization", resource.DisplayName)),
+		),
+		entitlement.NewAssignmentEntitlement(
+			resource,
+			orgMember,
+			entitlement.WithGrantableTo(userResourceType),
+			entitlement.WithDescription(fmt.Sprintf("Member of the %s organization", resource.DisplayName)),
+			entitlement.WithDisplayName(fmt.Sprintf("Member of the %s organization", resource.DisplayName)),
+		),
+	}, "", nil, nil
 }
 
-// Grants always returns an empty slice for users since they don't have any entitlements.
 func (o *orgBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
+	var offset int
+	var err error
+	if pToken.Token != "" {
+		offset, err = strconv.Atoi(pToken.Token)
+		if err != nil {
+			return nil, "", nil, err
+		}
+	}
+
+	res, err := o.client.ListOrganizationMemberships(ctx, offset)
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("failed to list org memberships: %w", err)
+	}
+
+	if len(res.Items) == 0 {
+		return nil, "", nil, nil
+	}
+	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
+
+	rv := []*v2.Grant{}
+	for _, orgMembership := range res.Items {
+		principalID, err := resourceSdk.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
+		if err != nil {
+			return nil, "", nil, fmt.Errorf("failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
+		}
+		rv = append(rv, grant.NewGrant(
+			resource,
+			orgMembership.Role,
+			principalID,
+		))
+	}
+	return rv, nextOffset, nil, nil
 }
 
 func newOrgBuilder(client *client.Client) *orgBuilder {
