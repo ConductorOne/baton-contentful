@@ -48,6 +48,9 @@ type SystemInfo struct {
 	// only for team memberships endpoint calls
 	// https://www.contentful.com/developers/docs/references/user-management-api/#/reference/team-memberships
 	OrganizationMembership Link `json:"organizationMembership"`
+
+	// only for invitations
+	InvitationURL string `json:"invitationUrl"`
 }
 
 type Link struct {
@@ -149,5 +152,21 @@ type GetTeamMembershipsResponse struct {
 }
 
 type TeamMembership struct {
+	Sys SystemInfo `json:"sys"`
+}
+
+type CreateInvitationBody struct {
+	// required
+	Email string `json:"email"`
+	// optional
+	FirstName string `json:"firstName"`
+	// optional
+	LastName string `json:"lastName"`
+	// optional.
+	//	One of "member", "developer", "admin" and "owner"
+	Role string `json:"role"`
+}
+
+type Invitation struct {
 	Sys SystemInfo `json:"sys"`
 }
