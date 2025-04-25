@@ -90,7 +90,11 @@ func (d *Connector) Validate(ctx context.Context) (annotations.Annotations, erro
 
 // New returns a new instance of the connector.
 func New(ctx context.Context, orgID, token string) (*Connector, error) {
+	c, err := client.New(ctx, orgID, token)
+	if err != nil {
+		return nil, err
+	}
 	return &Connector{
-		client: client.NewClient(orgID, token),
+		client: c,
 	}, nil
 }

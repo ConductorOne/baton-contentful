@@ -20,9 +20,6 @@ func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, 
 	url.Set("skip", fmt.Sprintf("%d", offset))
 	req.URL.RawQuery = url.Encode()
 
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
-
 	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err
