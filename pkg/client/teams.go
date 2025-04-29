@@ -14,13 +14,10 @@ func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, 
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
-	url.Set("skip", fmt.Sprintf("%d", offset))
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -46,13 +43,10 @@ func (c *Client) ListTeamMemberships(ctx context.Context, offset int) (*GetTeamM
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
-	url.Set("skip", fmt.Sprintf("%d", offset))
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -76,7 +70,6 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 	body := map[string]interface{}{
 		"organizationMembershipId": orgMembershipID,
 	}
-
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -87,7 +80,6 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
 	resp, err := c.Do(req)
@@ -114,11 +106,9 @@ func (c *Client) GetTeamMembershipByUser(ctx context.Context, orgMembershipID st
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("sys.organizationMembership.sys.id", orgMembershipID)
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	SetQueryParams(req.URL, map[string]string{
+		"sys.organizationMembership.sys.id": orgMembershipID,
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -143,9 +133,6 @@ func (c *Client) DeleteTeamMembership(ctx context.Context, teamID, teamMembershi
 	if err != nil {
 		return err
 	}
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.Do(req)
 	if err != nil {

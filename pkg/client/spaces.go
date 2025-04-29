@@ -14,13 +14,10 @@ func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
-	url.Set("skip", fmt.Sprintf("%d", offset))
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -48,8 +45,6 @@ func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string) (*GetSpaceR
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.token)
-
 	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err
@@ -74,13 +69,10 @@ func (c *Client) ListSpaceMemberships(ctx context.Context, spaceID string, offse
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
-	url.Set("skip", fmt.Sprintf("%d", offset))
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -112,7 +104,6 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 			},
 		},
 	}
-
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
@@ -123,7 +114,6 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
 	resp, err := c.Do(req)
@@ -149,7 +139,6 @@ func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMember
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -170,10 +159,10 @@ func (c *Client) GetSpaceMembershipByUser(ctx context.Context, spaceID, userID s
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("sys.space.sys.id[eq]", spaceID)
-	url.Set("sys.user.sys.id[eq]", userID)
-	req.URL.RawQuery = url.Encode()
+	SetQueryParams(req.URL, map[string]string{
+		"sys.space.sys.id[eq]": spaceID,
+		"sys.user.sys.id[eq]":  userID,
+	})
 
 	req.Header.Set("Authorization", "Bearer "+c.token)
 

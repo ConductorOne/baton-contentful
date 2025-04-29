@@ -13,13 +13,10 @@ func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganiz
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
-	url.Set("skip", fmt.Sprintf("%d", offset))
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -46,13 +43,10 @@ func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
-	url.Set("skip", fmt.Sprintf("%d", offset))
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -78,12 +72,9 @@ func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID str
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("sys.user.sys.id[eq]", userID)
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
+	SetQueryParams(req.URL, map[string]string{
+		"sys.user.sys.id[eq]": userID,
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -108,8 +99,6 @@ func (c *Client) DeleteOrganizationMembership(ctx context.Context, orgMembership
 	if err != nil {
 		return err
 	}
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
 
 	resp, err := c.Do(req)
 	if err != nil {

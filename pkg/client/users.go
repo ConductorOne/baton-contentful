@@ -15,10 +15,10 @@ func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, 
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("limit", fmt.Sprintf("%d", defaultLimit))
-	url.Set("skip", fmt.Sprintf("%d", offset))
-	req.URL.RawQuery = url.Encode()
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -44,11 +44,9 @@ func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersRespo
 		return nil, err
 	}
 
-	url := req.URL.Query()
-	url.Set("query", userID)
-	req.URL.RawQuery = url.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	SetQueryParams(req.URL, map[string]string{
+		"query": userID,
+	})
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -77,7 +75,6 @@ func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBod
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
 	resp, err := c.Do(req)
