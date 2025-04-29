@@ -75,7 +75,6 @@ func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 
 // Entitlements always returns an empty slice for users.
 func (o *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-
 	return []*v2.Entitlement{
 		entitlement.NewAssignmentEntitlement(
 			resource,

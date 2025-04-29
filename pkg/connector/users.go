@@ -38,7 +38,6 @@ func (o *userBuilder) userResource(ctx context.Context, user client.User) *v2.Re
 	lastActive := o.client.GetLastActiveAt(ctx, user.Sys.ID)
 	if lastActive != nil {
 		traits = append(traits, resourceSdk.WithLastLogin(*lastActive))
-
 	}
 
 	userResource, err := resourceSdk.NewUserResource(
