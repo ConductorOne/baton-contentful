@@ -57,7 +57,7 @@ func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	res, err := o.client.ListTeams(ctx, offset)
 	items := res.Items
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list users: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
 	}
 
 	if len(items) == 0 {
@@ -99,7 +99,7 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 
 	res, err := o.client.ListTeamMemberships(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list org memberships: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
@@ -111,7 +111,7 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 	for _, orgMembership := range res.Items {
 		principalID, err := resourceSdk.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
+			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
 		}
 		rv = append(rv, grant.NewGrant(
 			resource,
@@ -130,7 +130,7 @@ func (o *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 	}
 
 	if len(res.Items) == 0 {
-		return nil, fmt.Errorf("no org membership found for user %s", principal.Id.Resource)
+		return nil, fmt.Errorf("baton-contentful: no org membership found for user %s", principal.Id.Resource)
 	}
 
 	orgMembershipID := res.Items[0].Sys.ID
@@ -148,27 +148,27 @@ func (o *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 
 	resOrgMembership, err := o.client.GetOrganizationMembershipByUser(ctx, principal.Id.Resource)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get org membership: %w", err)
+		return nil, fmt.Errorf("baton-contentful: failed to get org membership: %w", err)
 	}
 
 	if len(resOrgMembership.Items) == 0 {
-		return nil, fmt.Errorf("no org membership found for user %s", principal.Id.Resource)
+		return nil, fmt.Errorf("baton-contentful: no org membership found for user %s", principal.Id.Resource)
 	}
 
 	orgMembershipID := resOrgMembership.Items[0].Sys.ID
 	resTeamMembership, err := o.client.GetTeamMembershipByUser(ctx, orgMembershipID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get team membership: %w", err)
+		return nil, fmt.Errorf("baton-contentful: failed to get team membership: %w", err)
 	}
 
 	if len(resTeamMembership.Items) == 0 {
-		return nil, fmt.Errorf("no team membership found for user %s", principal.Id.Resource)
+		return annotations.New(&v2.GrantAlreadyRevoked{}), fmt.Errorf("baton-contentful: no team membership found for user %s", principal.Id.Resource)
 	}
 
 	teamMembershipID := resTeamMembership.Items[0].Sys.ID
 	err = o.client.DeleteTeamMembership(ctx, teamID, teamMembershipID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete team membership: %w", err)
+		return nil, fmt.Errorf("baton-contentful: failed to delete team membership: %w", err)
 	}
 	return nil, nil
 }

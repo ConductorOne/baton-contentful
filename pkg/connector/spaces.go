@@ -22,9 +22,20 @@ const spaceAdmin = "admin"
 
 type spaceBuilder struct {
 	client *client.Client
-	// id: name
+	// roleID: name
 	roleCache map[string]string
 	mu        *sync.Mutex
+}
+
+func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
+	res, err := o.client.ListSpaceRoles(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("baton-contentful: failed to list space roles: %w", err)
+	}
+	for _, role := range res.Items {
+		o.cacheSetRole(role.Sys.ID, role.Name)
+	}
+	return nil
 }
 
 func (o spaceBuilder) cacheGetRole(roleID string) string {
@@ -75,7 +86,7 @@ func (o *spaceBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId
 
 	res, err := o.client.ListSpaces(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list users: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
 	}
 
 	if len(res.Items) == 0 {
@@ -132,7 +143,7 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 
 	res, err := o.client.ListSpaceMemberships(ctx, resource.Id.Resource, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list org memberships: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
@@ -144,13 +155,13 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 	for _, spaceMembership := range res.Items {
 		principalID, err := resourceSdk.NewResourceID(userResourceType, spaceMembership.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
+			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
 		}
 
 		if spaceMembership.Admin {
 			principalID, err = resourceSdk.NewResourceID(userResourceType, spaceMembership.Sys.User.Sys.ID)
 			if err != nil {
-				return nil, "", nil, fmt.Errorf("failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
+				return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
 			}
 			rv = append(rv, grant.NewGrant(
 				resource,
@@ -161,10 +172,17 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 		}
 
 		for _, role := range spaceMembership.Roles {
+			if len(o.roleCache) == 0 {
+				err := o.fillCache(ctx, resource.Id.Resource)
+				if err != nil {
+					return nil, "", nil, fmt.Errorf("baton-contentful: failed to fill cache: %w", err)
+				}
+			}
+
 			roleName := o.cacheGetRole(role.Sys.ID)
 			if roleName == "" {
 				logger.Info("cache miss for role", zap.String("roleID", role.Sys.ID))
-				return nil, "", nil, fmt.Errorf("failed to get role name for role %s", role.Sys.ID)
+				return nil, "", nil, fmt.Errorf("baton-contentful: failed to get role name for role %s", role.Sys.ID)
 			}
 			rv = append(rv, grant.NewGrant(
 				resource,
@@ -185,7 +203,7 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 		return nil, err
 	}
 	if len(resUser.Items) == 0 {
-		return nil, fmt.Errorf("no user found for ID %s", principal.Id.Resource)
+		return nil, fmt.Errorf("baton-contentful: no user found for ID %s", principal.Id.Resource)
 	}
 
 	roleID := ""
@@ -193,7 +211,7 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 	if !admin {
 		resSpaceRoles, err := o.client.ListSpaceRoles(ctx, spaceID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("baton-contentful: failed to list space roles: %w", err)
 		}
 
 		for _, item := range resSpaceRoles.Items {
@@ -223,13 +241,13 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 	}
 
 	if len(resSpaceMembership.Items) == 0 {
-		return nil, fmt.Errorf("no space membership found for user %s", principal.Id.Resource)
+		return annotations.New(&v2.GrantAlreadyRevoked{}), fmt.Errorf("baton-contentful: no space membership found for user %s", principal.Id.Resource)
 	}
 
 	spaceMembershipID := resSpaceMembership.Items[0].Sys.ID
 	err = o.client.DeleteSpaceMembership(ctx, spaceID, spaceMembershipID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete team membership: %w", err)
+		return nil, fmt.Errorf("baton-contentful: failed to delete team membership: %w", err)
 	}
 	return nil, nil
 }

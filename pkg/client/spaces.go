@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse, error) {
@@ -19,19 +21,17 @@ func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse
 		"skip":  fmt.Sprintf("%d", offset),
 	})
 
-	resp, err := c.Do(req)
+	var res GetSpacesResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetSpacesResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -45,19 +45,17 @@ func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string) (*GetSpaceR
 		return nil, err
 	}
 
-	resp, err := c.Do(req)
+	var res GetSpaceRolesResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetSpaceRolesResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -74,19 +72,17 @@ func (c *Client) ListSpaceMemberships(ctx context.Context, spaceID string, offse
 		"skip":  fmt.Sprintf("%d", offset),
 	})
 
-	resp, err := c.Do(req)
+	var res GetSpaceMembershipsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetSpaceMembershipsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -116,19 +112,17 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 
 	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
-	resp, err := c.Do(req)
+	var res SpaceMembership
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("failed to create space membership: %s", resp.Status)
-	}
-
-	var res SpaceMembership
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -144,7 +138,6 @@ func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMember
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete space membership: %s", resp.Status)
@@ -166,19 +159,17 @@ func (c *Client) GetSpaceMembershipByUser(ctx context.Context, spaceID, userID s
 
 	req.Header.Set("Authorization", "Bearer "+c.token)
 
-	resp, err := c.Do(req)
+	var res GetSpaceMembershipsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get space membership by user: %s", resp.Status)
-	}
-
-	var res GetSpaceMembershipsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return &res, nil

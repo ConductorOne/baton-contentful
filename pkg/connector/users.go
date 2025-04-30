@@ -68,7 +68,7 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	res, err := o.client.ListUsers(ctx, offset)
 	users := res.Items
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list users: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
 	}
 
 	if len(users) == 0 {
@@ -76,7 +76,7 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(users))
 
-	rv := []*v2.Resource{}
+	rv := make([]*v2.Resource, 0, len(users))
 	for _, user := range users {
 		rv = append(rv, o.userResource(ctx, user))
 	}

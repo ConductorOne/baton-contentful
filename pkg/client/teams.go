@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, error) {
@@ -19,19 +21,17 @@ func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, 
 		"skip":  fmt.Sprintf("%d", offset),
 	})
 
-	resp, err := c.Do(req)
+	var res GetTeamsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetTeamsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -48,19 +48,17 @@ func (c *Client) ListTeamMemberships(ctx context.Context, offset int) (*GetTeamM
 		"skip":  fmt.Sprintf("%d", offset),
 	})
 
-	resp, err := c.Do(req)
+	var res GetTeamMembershipsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetTeamMembershipsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -82,19 +80,17 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 
 	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
-	resp, err := c.Do(req)
+	var res TeamMembership
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("failed to create team membership: %s", resp.Status)
-	}
-
-	var res TeamMembership
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -110,19 +106,17 @@ func (c *Client) GetTeamMembershipByUser(ctx context.Context, orgMembershipID st
 		"sys.organizationMembership.sys.id": orgMembershipID,
 	})
 
-	resp, err := c.Do(req)
+	var res GetTeamMembershipsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetTeamMembershipsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -138,7 +132,6 @@ func (c *Client) DeleteTeamMembership(ctx context.Context, teamID, teamMembershi
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete team membership: %s", resp.Status)

@@ -2,9 +2,10 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganizationsResponse, error) {
@@ -18,19 +19,17 @@ func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganiz
 		"skip":  fmt.Sprintf("%d", offset),
 	})
 
-	resp, err := c.Do(req)
+	var res GetOrganizationsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetOrganizationsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -48,19 +47,17 @@ func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*
 		"skip":  fmt.Sprintf("%d", offset),
 	})
 
-	resp, err := c.Do(req)
+	var res GetOrganizationMembershipsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetOrganizationMembershipsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -76,19 +73,17 @@ func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID str
 		"sys.user.sys.id[eq]": userID,
 	})
 
-	resp, err := c.Do(req)
+	var res GetOrganizationMembershipsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get organization membership: %s", resp.Status)
-	}
-
-	var res GetOrganizationMembershipsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -104,7 +99,6 @@ func (c *Client) DeleteOrganizationMembership(ctx context.Context, orgMembership
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete organization membership: %s", resp.Status)

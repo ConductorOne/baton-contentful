@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, error) {
@@ -20,19 +22,17 @@ func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, 
 		"skip":  fmt.Sprintf("%d", offset),
 	})
 
-	resp, err := c.Do(req)
+	var res GetUsersResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
-
-	var res GetUsersResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil
@@ -48,19 +48,17 @@ func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersRespo
 		"query": userID,
 	})
 
-	resp, err := c.Do(req)
+	var res GetUsersResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get user by id: %s", resp.Status)
-	}
-
-	var res GetUsersResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return &res, nil
@@ -77,18 +75,17 @@ func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBod
 	}
 	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
-	resp, err := c.Do(req)
+	var res Invitation
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("failed to create space membership: %s", resp.Status)
-	}
-
-	var res Invitation
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
 	}
 
 	return &res, nil

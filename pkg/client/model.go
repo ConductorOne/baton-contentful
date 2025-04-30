@@ -1,12 +1,26 @@
 package client
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Response struct {
 	Total int        `json:"total"`
 	Limit int        `json:"limit"`
 	Skip  int        `json:"skip"`
 	Sys   SystemInfo `json:"sys"`
+}
+
+type ErrorResponse struct {
+	RequestID string     `json:"requestId"`
+	Msg       string     `json:"message"`
+	Sys       SystemInfo `json:"sys"`
+	Details   any        `json:"details"`
+}
+
+func (e *ErrorResponse) Message() string {
+	return fmt.Sprintf("requestId: %s, sys: %+v, message: %s, details: %+v", e.RequestID, e.Msg, e.Sys, e.Details)
 }
 
 type GetUsersResponse struct {

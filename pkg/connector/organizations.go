@@ -57,7 +57,7 @@ func (o *orgBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, 
 
 	res, err := o.client.ListOrganizations(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list users: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
 	}
 
 	if len(res.Items) == 0 {
@@ -119,7 +119,7 @@ func (o *orgBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *
 
 	res, err := o.client.ListOrganizationMemberships(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list org memberships: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
@@ -131,7 +131,7 @@ func (o *orgBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *
 	for _, orgMembership := range res.Items {
 		principalID, err := resourceSdk.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
+			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
 		}
 		rv = append(rv, grant.NewGrant(
 			resource,
@@ -155,14 +155,15 @@ func (o *orgBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.A
 	if err != nil {
 		return nil, err
 	}
+
 	if len(resOrgMembership.Items) == 0 {
-		return nil, fmt.Errorf("organization membership not found for user %s", principal.Id.Resource)
+		return annotations.New(&v2.GrantAlreadyRevoked{}), fmt.Errorf("baton-contentful: organization membership not found for user %s", principal.Id.Resource)
 	}
 
 	orgMembershipID := resOrgMembership.Items[0].Sys.ID
 	err = o.client.DeleteOrganizationMembership(ctx, orgMembershipID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete organization membership %s: %w", orgMembershipID, err)
+		return nil, fmt.Errorf("baton-contentful: failed to delete organization membership %s: %w", orgMembershipID, err)
 	}
 	return nil, nil
 }
