@@ -30,9 +30,7 @@ func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, 
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -57,9 +55,7 @@ func (c *Client) ListTeamMemberships(ctx context.Context, offset int) (*GetTeamM
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -89,9 +85,7 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("failed to create team membership: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -115,9 +109,7 @@ func (c *Client) GetTeamMembershipByUser(ctx context.Context, orgMembershipID st
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -128,14 +120,14 @@ func (c *Client) DeleteTeamMembership(ctx context.Context, teamID, teamMembershi
 		return err
 	}
 
-	resp, err := c.Do(req)
+	resp, err := c.Do(req,
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("failed to delete team membership: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return nil
 }

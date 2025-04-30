@@ -28,9 +28,7 @@ func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganiz
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -56,9 +54,7 @@ func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -82,9 +78,7 @@ func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID str
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get organization membership: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -95,14 +89,14 @@ func (c *Client) DeleteOrganizationMembership(ctx context.Context, orgMembership
 		return err
 	}
 
-	resp, err := c.Do(req)
+	resp, err := c.Do(req,
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("failed to delete organization membership: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return nil
 }

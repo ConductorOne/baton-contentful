@@ -31,9 +31,7 @@ func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, 
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -57,9 +55,7 @@ func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersRespo
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get user by id: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -84,9 +80,7 @@ func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBod
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("failed to create space membership: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }

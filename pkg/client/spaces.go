@@ -30,9 +30,7 @@ func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -54,9 +52,7 @@ func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string) (*GetSpaceR
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -81,9 +77,7 @@ func (c *Client) ListSpaceMemberships(ctx context.Context, spaceID string, offse
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list users: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -121,9 +115,7 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("failed to create space membership: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
@@ -134,14 +126,14 @@ func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMember
 		return err
 	}
 
-	resp, err := c.Do(req)
+	resp, err := c.Do(req,
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("failed to delete space membership: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return nil
 }
@@ -168,9 +160,7 @@ func (c *Client) GetSpaceMembershipByUser(ctx context.Context, spaceID, userID s
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get space membership by user: %s", resp.Status)
-	}
+	defer resp.Body.Close()
 
 	return &res, nil
 }
