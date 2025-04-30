@@ -20,7 +20,7 @@ type ErrorResponse struct {
 }
 
 func (e *ErrorResponse) Message() string {
-	return fmt.Sprintf("requestId: %s, sys: %+v, message: %s, details: %+v", e.RequestID, e.Msg, e.Sys, e.Details)
+	return fmt.Sprintf("requestId: %s, sys: %+v, message: %s, details: %+v", e.RequestID, e.Sys, e.Msg, e.Details)
 }
 
 type GetUsersResponse struct {
