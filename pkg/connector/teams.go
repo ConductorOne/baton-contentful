@@ -162,7 +162,7 @@ func (o *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 	}
 
 	if len(resTeamMembership.Items) == 0 {
-		return annotations.New(&v2.GrantAlreadyRevoked{}), fmt.Errorf("baton-contentful: no team membership found for user %s", principal.Id.Resource)
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 	}
 
 	teamMembershipID := resTeamMembership.Items[0].Sys.ID

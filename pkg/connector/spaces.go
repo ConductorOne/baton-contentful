@@ -241,7 +241,7 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 	}
 
 	if len(resSpaceMembership.Items) == 0 {
-		return annotations.New(&v2.GrantAlreadyRevoked{}), fmt.Errorf("baton-contentful: no space membership found for user %s", principal.Id.Resource)
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 	}
 
 	spaceMembershipID := resSpaceMembership.Items[0].Sys.ID

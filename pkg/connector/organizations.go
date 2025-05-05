@@ -157,7 +157,7 @@ func (o *orgBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.A
 	}
 
 	if len(resOrgMembership.Items) == 0 {
-		return annotations.New(&v2.GrantAlreadyRevoked{}), fmt.Errorf("baton-contentful: organization membership not found for user %s", principal.Id.Resource)
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 	}
 
 	orgMembershipID := resOrgMembership.Items[0].Sys.ID
