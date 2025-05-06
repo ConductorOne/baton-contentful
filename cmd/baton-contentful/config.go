@@ -6,10 +6,25 @@ import (
 )
 
 var (
+	TokenField = field.StringField(
+		"token",
+		field.WithDescription("The API token used to authenticate with the service."),
+		field.WithRequired(true),
+	)
+
+	OrgIdField = field.StringField(
+		"organization-id",
+		field.WithDescription("The ID of the organization to use."),
+		field.WithRequired(true),
+	)
+
 	// ConfigurationFields defines the external configuration required for the
 	// connector to run. Note: these fields can be marked as optional or
 	// required.
-	ConfigurationFields = []field.SchemaField{}
+	ConfigurationFields = []field.SchemaField{
+		TokenField,
+		OrgIdField,
+	}
 
 	// FieldRelationships defines relationships between the fields listed in
 	// ConfigurationFields that can be automatically validated. For example, a

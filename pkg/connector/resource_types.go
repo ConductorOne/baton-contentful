@@ -10,3 +10,21 @@ var userResourceType = &v2.ResourceType{
 	DisplayName: "User",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_USER},
 }
+
+var spaceResourceType = &v2.ResourceType{
+	Id:          "space",
+	DisplayName: "Space",
+	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
+}
+
+var orgResourceType = &v2.ResourceType{
+	Id:          "organization",
+	DisplayName: "Organization",
+	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
+}
+
+var teamResourceType = &v2.ResourceType{
+	Id:          "team",
+	DisplayName: "Team",
+	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
+}
