@@ -28,12 +28,22 @@ type spaceBuilder struct {
 }
 
 func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
-	res, err := o.client.ListSpaceRoles(ctx, spaceID)
-	if err != nil {
-		return fmt.Errorf("baton-contentful: failed to list space roles: %w", err)
-	}
-	for _, role := range res.Items {
-		o.cacheSetRole(role.Sys.ID, role.Name)
+	var offset int
+	for {
+		res, err := o.client.ListSpaceRoles(ctx, spaceID, offset)
+		if err != nil {
+			return fmt.Errorf("baton-contentful: failed to list space roles: %w", err)
+		}
+
+		if len(res.Items) == 0 {
+			break
+		}
+
+		for _, role := range res.Items {
+			o.cacheSetRole(role.Sys.ID, role.Name)
+		}
+
+		offset = offset + len(res.Items)
 	}
 	return nil
 }
@@ -102,11 +112,20 @@ func (o *spaceBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId
 	return rv, nextOffset, nil, nil
 }
 
-func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	res, err := o.client.ListSpaceRoles(ctx, resource.Id.Resource)
+func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+	var offset int
+	var err error
+	if pToken.Token != "" {
+		offset, err = strconv.Atoi(pToken.Token)
+		if err != nil {
+			return nil, "", nil, err
+		}
+	}
+	res, err := o.client.ListSpaceRoles(ctx, resource.Id.Resource, offset)
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("failed to list space roles: %w", err)
 	}
+
 	rv := make([]*v2.Entitlement, 0, len(res.Items))
 	for _, role := range res.Items {
 		o.cacheSetRole(role.Sys.ID, role.Name)
@@ -127,7 +146,8 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 		entitlement.WithDisplayName(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
 	))
 
-	return rv, "", nil, nil
+	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
+	return rv, nextOffset, nil, nil
 }
 
 func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
@@ -196,7 +216,7 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 
 func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
 	spaceID := entitlement.Resource.Id.Resource
-	role := strings.Split(entitlement.Id, ":")[2]
+	roleName := strings.Split(entitlement.Id, ":")[2]
 
 	resUser, err := o.client.GetUserByID(ctx, principal.Id.Resource)
 	if err != nil {
@@ -207,23 +227,32 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 	}
 
 	roleID := ""
-	admin := role == spaceAdmin
-	if !admin {
-		resSpaceRoles, err := o.client.ListSpaceRoles(ctx, spaceID)
+	isAdmin := roleName == spaceAdmin
+
+	// if given a role name, we need to find the corresponding role ID
+	if roleName != "" {
+		err := o.fillCache(ctx, spaceID)
 		if err != nil {
-			return nil, fmt.Errorf("baton-contentful: failed to list space roles: %w", err)
+			return nil, fmt.Errorf("baton-contentful: failed to fill cache: %w", err)
 		}
 
-		for _, item := range resSpaceRoles.Items {
-			if item.Name == role {
-				roleID = item.Sys.ID
+		for cacheRoleID, cacheRoleName := range o.roleCache {
+			if cacheRoleName == roleName {
+				roleID = cacheRoleID
 				break
 			}
 		}
 	}
 
 	email := resUser.Items[0].Email
-	_, err = o.client.CreateSpaceMembership(ctx, spaceID, email, roleID, admin)
+
+	// if the user is not an admin and no role ID is provided, we cannot create the membership
+	// https://www.contentful.com/developers/docs/references/user-management-api/#/reference/space-memberships
+	if !isAdmin && roleID == "" {
+		return nil, fmt.Errorf("baton-contentful: role ID must be provided for non-admin space memberships")
+	}
+
+	_, err = o.client.CreateSpaceMembership(ctx, spaceID, email, roleID, isAdmin)
 	if err != nil {
 		return nil, err
 	}
