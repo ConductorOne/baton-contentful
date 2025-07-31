@@ -43,7 +43,7 @@ func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 			o.cacheSetRole(role.Sys.ID, role.Name)
 		}
 
-		offset = offset + len(res.Items)
+		offset += len(res.Items)
 	}
 	return nil
 }
