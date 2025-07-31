@@ -142,13 +142,16 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 		))
 	}
 
-	rv = append(rv, entitlement.NewAssignmentEntitlement(
-		resource,
-		spaceAdmin,
-		entitlement.WithGrantableTo(userResourceType),
-		entitlement.WithDescription(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
-		entitlement.WithDisplayName(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
-	))
+	// so it's only included once
+	if offset == 0 {
+		rv = append(rv, entitlement.NewAssignmentEntitlement(
+			resource,
+			spaceAdmin,
+			entitlement.WithGrantableTo(userResourceType),
+			entitlement.WithDescription(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
+			entitlement.WithDisplayName(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
+		))
+	}
 
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 	return rv, nextOffset, nil, nil

@@ -75,8 +75,8 @@ jobs:
   test-teams:
     runs-on: ubuntu-latest
     env:
-      CONNECTOR_GRANT: 'space:rnr2bwrk8htn:Editor:user:00CoSVFyMvtNITGaaUzBwJ'
-      CONNECTOR_ENTITLEMENT: 'space:rnr2bwrk8htn:Editor'
+      CONNECTOR_GRANT: 'team:7rxGl7e3I3e3H0acuCmLmu:member:user:00CoSVFyMvtNITGaaUzBwJ'
+      CONNECTOR_ENTITLEMENT: 'team:7rxGl7e3I3e3H0acuCmLmu:member'
       CONNECTOR_PRINCIPAL: '00CoSVFyMvtNITGaaUzBwJ'
       CONNECTOR_PRINCIPAL_TYPE: 'user'
     steps:
