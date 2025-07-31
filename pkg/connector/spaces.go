@@ -126,6 +126,10 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 		return nil, "", nil, fmt.Errorf("failed to list space roles: %w", err)
 	}
 
+	if len(res.Items) == 0 {
+		return nil, "", nil, nil
+	}
+
 	rv := make([]*v2.Entitlement, 0, len(res.Items))
 	for _, role := range res.Items {
 		o.cacheSetRole(role.Sys.ID, role.Name)

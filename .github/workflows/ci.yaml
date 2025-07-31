@@ -27,9 +27,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CONNECTOR_GRANT: 'space:3mixbpbydcbz:Editor:user:01u7YLSQxSDu5PIc0VMdA2'
-      CONNECTOR_ENTITLEMENT: 'space:3mixbpbydcbz:Editor'
-      CONNECTOR_PRINCIPAL: '01u7YLSQxSDu5PIc0VMdA2'
+      CONNECTOR_GRANT: 'space:rnr2bwrk8htn:Editor:user:00CoSVFyMvtNITGaaUzBwJ'
+      CONNECTOR_ENTITLEMENT: 'space:rnr2bwrk8htn:Editor'
+      CONNECTOR_PRINCIPAL: '00CoSVFyMvtNITGaaUzBwJ'
       CONNECTOR_PRINCIPAL_TYPE: 'user'
     steps:
       - name: Install Go
@@ -75,9 +75,9 @@ jobs:
   test-teams:
     runs-on: ubuntu-latest
     env:
-      CONNECTOR_GRANT: 'team:5wMRXnmB1MgVC7iANLSMXk:member:user:4MOu5kWxXWFSQGphT28Woq'
-      CONNECTOR_ENTITLEMENT: 'team:5wMRXnmB1MgVC7iANLSMXk:member'
-      CONNECTOR_PRINCIPAL: '4MOu5kWxXWFSQGphT28Woq'
+      CONNECTOR_GRANT: 'space:rnr2bwrk8htn:Editor:user:00CoSVFyMvtNITGaaUzBwJ'
+      CONNECTOR_ENTITLEMENT: 'space:rnr2bwrk8htn:Editor'
+      CONNECTOR_PRINCIPAL: '00CoSVFyMvtNITGaaUzBwJ'
       CONNECTOR_PRINCIPAL_TYPE: 'user'
     steps:
       - name: Install Go
