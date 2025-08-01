@@ -14,8 +14,6 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"go.uber.org/zap"
 )
 
 const spaceAdmin = "admin"
@@ -48,15 +46,37 @@ func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 	return nil
 }
 
-func (o spaceBuilder) cacheGetRole(roleID string) string {
+func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID string) (string, error) {
+	if len(o.roleCache) == 0 {
+		if err := o.fillCache(ctx, spaceID); err != nil {
+			return "", fmt.Errorf("failed to fill cache: %w", err)
+		}
+	}
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
 	if role, ok := o.roleCache[roleID]; ok {
-		return role
+		return role, nil
 	}
 
-	return ""
+	return "", fmt.Errorf("roleID %s not found in cache, spaceID: %s", roleID, spaceID)
+}
+
+func (o spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName string) (string, error) {
+	if len(o.roleCache) == 0 {
+		if err := o.fillCache(ctx, spaceID); err != nil {
+			return "", fmt.Errorf("failed to fill cache: %w", err)
+		}
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	for roleID, name := range o.roleCache {
+		if name == roleName {
+			return roleID, nil
+		}
+	}
+	return "", fmt.Errorf("role %s not found in cache, spaceID: %s", roleName, spaceID)
 }
 
 func (o *spaceBuilder) cacheSetRole(roleID string, roleName string) {
@@ -158,7 +178,6 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 }
 
 func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
-	logger := ctxzap.Extract(ctx)
 	var offset int
 	var err error
 	if pToken.Token != "" {
@@ -199,17 +218,9 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 		}
 
 		for _, role := range spaceMembership.Roles {
-			if len(o.roleCache) == 0 {
-				err := o.fillCache(ctx, resource.Id.Resource)
-				if err != nil {
-					return nil, "", nil, fmt.Errorf("baton-contentful: failed to fill cache: %w", err)
-				}
-			}
-
-			roleName := o.cacheGetRole(role.Sys.ID)
-			if roleName == "" {
-				logger.Info("cache miss for role", zap.String("roleID", role.Sys.ID))
-				return nil, "", nil, fmt.Errorf("baton-contentful: failed to get role name for role %s", role.Sys.ID)
+			roleName, err := o.cacheGetRoleName(ctx, resource.Id.Resource, role.Sys.ID)
+			if err != nil {
+				return nil, "", nil, fmt.Errorf("baton-contentful: failed to get role name for role ID %s: %w", role.Sys.ID, err)
 			}
 			rv = append(rv, grant.NewGrant(
 				resource,
@@ -236,19 +247,9 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 	roleID := ""
 	isAdmin := roleName == spaceAdmin
 
-	// if given a role name, we need to find the corresponding role ID
-	if roleName != "" {
-		err := o.fillCache(ctx, spaceID)
-		if err != nil {
-			return nil, fmt.Errorf("baton-contentful: failed to fill cache: %w", err)
-		}
-
-		for cacheRoleID, cacheRoleName := range o.roleCache {
-			if cacheRoleName == roleName {
-				roleID = cacheRoleID
-				break
-			}
-		}
+	roleID, err = o.cacheGetRoleID(ctx, spaceID, roleName)
+	if err != nil {
+		return nil, fmt.Errorf("baton-contentful: failed to get role ID for role %s: %w", roleName, err)
 	}
 
 	email := resUser.Items[0].Email
