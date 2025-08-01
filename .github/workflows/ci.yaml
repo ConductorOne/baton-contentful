@@ -27,9 +27,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CONNECTOR_GRANT: 'space:rnr2bwrk8htn:Editor:user:00CoSVFyMvtNITGaaUzBwJ'
-      CONNECTOR_ENTITLEMENT: 'space:rnr2bwrk8htn:Editor'
-      CONNECTOR_PRINCIPAL: '00CoSVFyMvtNITGaaUzBwJ'
+      CONNECTOR_GRANT: 'space:a67xy1bo0w3z:Editor:user:2ZsjuQFlJzc2W9RteSqLTG'
+      CONNECTOR_ENTITLEMENT: 'space:a67xy1bo0w3z:Editor'
+      CONNECTOR_PRINCIPAL: '2ZsjuQFlJzc2W9RteSqLTG'
       CONNECTOR_PRINCIPAL_TYPE: 'user'
     steps:
       - name: Install Go
@@ -48,7 +48,7 @@ jobs:
       - name: Check for grant before revoking
         run: |
           baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
-          jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
+          jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\"" | grep -q "true"
 
       - name: Revoke grants
         run: ./baton-contentful --revoke-grant="${{ env.CONNECTOR_GRANT }}"
@@ -75,8 +75,8 @@ jobs:
   test-teams:
     runs-on: ubuntu-latest
     env:
-      CONNECTOR_GRANT: 'team:7rxGl7e3I3e3H0acuCmLmu:member:user:00CoSVFyMvtNITGaaUzBwJ'
-      CONNECTOR_ENTITLEMENT: 'team:7rxGl7e3I3e3H0acuCmLmu:member'
+      CONNECTOR_GRANT: 'team:4ZzPNkbOIIPFtEE865PcR1:member:user:00CoSVFyMvtNITGaaUzBwJ'
+      CONNECTOR_ENTITLEMENT: 'team:4ZzPNkbOIIPFtEE865PcR1:member'
       CONNECTOR_PRINCIPAL: '00CoSVFyMvtNITGaaUzBwJ'
       CONNECTOR_PRINCIPAL_TYPE: 'user'
     steps:
