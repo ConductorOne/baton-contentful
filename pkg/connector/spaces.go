@@ -168,7 +168,7 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 		}
 	}
 
-	res, err := o.client.ListSpaceMemberships(ctx, resource.Id.Resource, offset)
+	res, err := o.client.ListSpaceMembers(ctx, resource.Id.Resource, offset)
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
 	}
