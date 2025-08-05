@@ -23,6 +23,7 @@ type spaceBuilder struct {
 	// roleID: name
 	roleCache map[string]string
 	mu        *sync.Mutex
+	once      *sync.Once
 }
 
 func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
@@ -47,11 +48,14 @@ func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 }
 
 func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID string) (string, error) {
-	if len(o.roleCache) == 0 {
-		if err := o.fillCache(ctx, spaceID); err != nil {
-			return "", fmt.Errorf("failed to fill cache: %w", err)
-		}
+	var fillErr error
+	o.once.Do(func() {
+		fillErr = o.fillCache(ctx, spaceID)
+	})
+	if fillErr != nil {
+		return "", fmt.Errorf("failed to fill cache: %w", fillErr)
 	}
+
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -63,11 +67,14 @@ func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID stri
 }
 
 func (o spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName string) (string, error) {
-	if len(o.roleCache) == 0 {
-		if err := o.fillCache(ctx, spaceID); err != nil {
-			return "", fmt.Errorf("failed to fill cache: %w", err)
-		}
+	var fillErr error
+	o.once.Do(func() {
+		fillErr = o.fillCache(ctx, spaceID)
+	})
+	if fillErr != nil {
+		return "", fmt.Errorf("failed to fill cache: %w", fillErr)
 	}
+
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -294,5 +301,6 @@ func newSpaceBuilder(client *client.Client) *spaceBuilder {
 		client:    client,
 		mu:        &sync.Mutex{},
 		roleCache: make(map[string]string),
+		once:      &sync.Once{},
 	}
 }
