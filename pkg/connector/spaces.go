@@ -20,10 +20,14 @@ const spaceAdmin = "admin"
 
 type spaceBuilder struct {
 	client *client.Client
-	// roleID: name
-	roleCache map[string]string
-	mu        *sync.Mutex
-	once      *sync.Once
+	// spaceId: role
+	spaceRoleCache map[string][]role
+	mu             *sync.Mutex
+}
+
+type role struct {
+	Id   string
+	Name string
 }
 
 func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
@@ -39,7 +43,7 @@ func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 		}
 
 		for _, role := range res.Items {
-			o.cacheSetRole(role.Sys.ID, role.Name)
+			o.cacheSetRole(spaceID, role.Sys.ID, role.Name)
 		}
 
 		offset += len(res.Items)
@@ -48,49 +52,52 @@ func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 }
 
 func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID string) (string, error) {
-	var fillErr error
-	o.once.Do(func() {
-		fillErr = o.fillCache(ctx, spaceID)
-	})
-	if fillErr != nil {
-		return "", fmt.Errorf("failed to fill cache: %w", fillErr)
+	// if no roles are cached for the space, we need to fill the cache
+	if len(o.spaceRoleCache[spaceID]) == 0 {
+		if err := o.fillCache(ctx, spaceID); err != nil {
+			return "", fmt.Errorf("failed to fill cache: %w", err)
+		}
 	}
 
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	if role, ok := o.roleCache[roleID]; ok {
-		return role, nil
+	for _, role := range o.spaceRoleCache[spaceID] {
+		if role.Id == roleID {
+			return role.Name, nil
+		}
 	}
 
 	return "", fmt.Errorf("roleID %s not found in cache, spaceID: %s", roleID, spaceID)
 }
 
 func (o spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName string) (string, error) {
-	var fillErr error
-	o.once.Do(func() {
-		fillErr = o.fillCache(ctx, spaceID)
-	})
-	if fillErr != nil {
-		return "", fmt.Errorf("failed to fill cache: %w", fillErr)
+	// if no roles are cached for the space, we need to fill the cache
+	if len(o.spaceRoleCache[spaceID]) == 0 {
+		if err := o.fillCache(ctx, spaceID); err != nil {
+			return "", fmt.Errorf("failed to fill cache: %w", err)
+		}
 	}
 
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	for roleID, name := range o.roleCache {
-		if name == roleName {
-			return roleID, nil
+	for _, role := range o.spaceRoleCache[spaceID] {
+		if role.Name == roleName {
+			return role.Id, nil
 		}
 	}
 	return "", fmt.Errorf("role %s not found in cache, spaceID: %s", roleName, spaceID)
 }
 
-func (o *spaceBuilder) cacheSetRole(roleID string, roleName string) {
+func (o *spaceBuilder) cacheSetRole(spaceId, roleID, roleName string) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	o.roleCache[roleID] = roleName
+	o.spaceRoleCache[spaceId] = append(o.spaceRoleCache[spaceId], role{
+		Id:   roleID,
+		Name: roleName,
+	})
 }
 
 func (o *spaceBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
@@ -159,7 +166,7 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 
 	rv := make([]*v2.Entitlement, 0, len(res.Items))
 	for _, role := range res.Items {
-		o.cacheSetRole(role.Sys.ID, role.Name)
+		o.cacheSetRole(resource.Id.Resource, role.Sys.ID, role.Name)
 		rv = append(rv, entitlement.NewAssignmentEntitlement(
 			resource,
 			role.Name,
@@ -254,9 +261,12 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 	roleID := ""
 	isAdmin := roleName == spaceAdmin
 
-	roleID, err = o.cacheGetRoleID(ctx, spaceID, roleName)
-	if err != nil {
-		return nil, fmt.Errorf("baton-contentful: failed to get role ID for role %s: %w", roleName, err)
+	// admin role is special, we don't need to look it up
+	if roleName != spaceAdmin {
+		roleID, err = o.cacheGetRoleID(ctx, spaceID, roleName)
+		if err != nil {
+			return nil, fmt.Errorf("baton-contentful: failed to get role ID for role %s: %w", roleName, err)
+		}
 	}
 
 	email := resUser.Items[0].Email
@@ -298,9 +308,8 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 
 func newSpaceBuilder(client *client.Client) *spaceBuilder {
 	return &spaceBuilder{
-		client:    client,
-		mu:        &sync.Mutex{},
-		roleCache: make(map[string]string),
-		once:      &sync.Once{},
+		client:         client,
+		mu:             &sync.Mutex{},
+		spaceRoleCache: make(map[string][]role),
 	}
 }
