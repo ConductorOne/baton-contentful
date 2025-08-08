@@ -171,7 +171,7 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 	}
 
 	if len(res.Items) == 0 {
-		return nil, "", nil, nil
+		return rv, "", nil, nil
 	}
 
 	for _, role := range res.Items {
