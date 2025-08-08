@@ -52,15 +52,15 @@ func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 }
 
 func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID string) (string, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	// if no roles are cached for the space, we need to fill the cache
 	if len(o.spaceRoleCache[spaceID]) == 0 {
 		if err := o.fillCache(ctx, spaceID); err != nil {
 			return "", fmt.Errorf("failed to fill cache: %w", err)
 		}
 	}
-
-	o.mu.Lock()
-	defer o.mu.Unlock()
 
 	for _, role := range o.spaceRoleCache[spaceID] {
 		if role.Id == roleID {
@@ -72,15 +72,15 @@ func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID stri
 }
 
 func (o spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName string) (string, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	// if no roles are cached for the space, we need to fill the cache
 	if len(o.spaceRoleCache[spaceID]) == 0 {
 		if err := o.fillCache(ctx, spaceID); err != nil {
 			return "", fmt.Errorf("failed to fill cache: %w", err)
 		}
 	}
-
-	o.mu.Lock()
-	defer o.mu.Unlock()
 
 	for _, role := range o.spaceRoleCache[spaceID] {
 		if role.Name == roleName {
@@ -91,9 +91,6 @@ func (o spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName stri
 }
 
 func (o *spaceBuilder) cacheSetRole(spaceId, roleID, roleName string) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
 	o.spaceRoleCache[spaceId] = append(o.spaceRoleCache[spaceId], role{
 		Id:   roleID,
 		Name: roleName,
@@ -155,6 +152,19 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 			return nil, "", nil, err
 		}
 	}
+
+	rv := []*v2.Entitlement{}
+	// so it's only included once
+	if offset == 0 {
+		rv = append(rv, entitlement.NewAssignmentEntitlement(
+			resource,
+			spaceAdmin,
+			entitlement.WithGrantableTo(userResourceType),
+			entitlement.WithDescription(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
+			entitlement.WithDisplayName(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
+		))
+	}
+
 	res, err := o.client.ListSpaceRoles(ctx, resource.Id.Resource, offset)
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("failed to list space roles: %w", err)
@@ -164,7 +174,6 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 		return nil, "", nil, nil
 	}
 
-	rv := make([]*v2.Entitlement, 0, len(res.Items))
 	for _, role := range res.Items {
 		o.cacheSetRole(resource.Id.Resource, role.Sys.ID, role.Name)
 		rv = append(rv, entitlement.NewAssignmentEntitlement(
@@ -173,17 +182,6 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 			entitlement.WithGrantableTo(userResourceType),
 			entitlement.WithDescription(fmt.Sprintf("Role %s for %s space", role.Name, resource.DisplayName)),
 			entitlement.WithDisplayName(fmt.Sprintf("Role %s for %s space ", role.Name, resource.DisplayName)),
-		))
-	}
-
-	// so it's only included once
-	if offset == 0 {
-		rv = append(rv, entitlement.NewAssignmentEntitlement(
-			resource,
-			spaceAdmin,
-			entitlement.WithGrantableTo(userResourceType),
-			entitlement.WithDescription(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
-			entitlement.WithDisplayName(fmt.Sprintf("Admin for %s space", resource.DisplayName)),
 		))
 	}
 
