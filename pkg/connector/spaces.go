@@ -30,7 +30,7 @@ type role struct {
 	Name string
 }
 
-func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
+func (o *spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 	var offset int
 	for {
 		res, err := o.client.ListSpaceRoles(ctx, spaceID, offset)
@@ -51,7 +51,7 @@ func (o spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
 	return nil
 }
 
-func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID string) (string, error) {
+func (o *spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID string) (string, error) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -71,7 +71,7 @@ func (o spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID stri
 	return "", fmt.Errorf("roleID %s not found in cache, spaceID: %s", roleID, spaceID)
 }
 
-func (o spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName string) (string, error) {
+func (o *spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName string) (string, error) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
