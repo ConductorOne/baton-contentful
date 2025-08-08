@@ -175,7 +175,6 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 	}
 
 	for _, role := range res.Items {
-		o.cacheSetRole(resource.Id.Resource, role.Sys.ID, role.Name)
 		rv = append(rv, entitlement.NewAssignmentEntitlement(
 			resource,
 			role.Name,
