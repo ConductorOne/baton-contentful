@@ -35,13 +35,18 @@ func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse
 	return &res, nil
 }
 
-// https://www.contentful.com/developers/docs/references/user-management-api/#/reference/space-roles
+// https://www.contentful.com/developers/docs/references/content-management-api/#/reference/roles/roles-collection/get-all-roles/console/curl
 // https://www.contentful.com/help/roles/space-roles-and-permissions/
-func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string) (*GetSpaceRolesResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations/%s/roles", BaseURL, c.orgID), nil)
+func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string, offset int) (*GetSpaceRolesResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces/%s/roles", BaseURL, spaceID), nil)
 	if err != nil {
 		return nil, err
 	}
+
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
 
 	var res GetSpaceRolesResponse
 	resp, err := c.Do(req,
@@ -57,8 +62,8 @@ func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string) (*GetSpaceR
 	return &res, nil
 }
 
-func (c *Client) ListSpaceMemberships(ctx context.Context, spaceID string, offset int) (*GetSpaceMembershipsResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces/%s/space_memberships", BaseURL, spaceID), nil)
+func (c *Client) ListSpaceMembers(ctx context.Context, spaceID string, offset int) (*GetSpaceMembershipsResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces/%s/space_members", BaseURL, spaceID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -82,18 +87,22 @@ func (c *Client) ListSpaceMemberships(ctx context.Context, spaceID string, offse
 	return &res, nil
 }
 
-func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email string, roleID string, admin bool) (*SpaceMembership, error) {
+func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email string, roleID string, isAdmin bool) (*SpaceMembership, error) {
 	body := map[string]interface{}{
-		"admin": admin,
+		"admin": isAdmin,
 		"email": email,
-		"roles": []LinkSys{
+	}
+
+	if roleID != "" {
+		body["roles"] = []LinkSys{
 			{
 				Type:     "Link",
 				LinkType: "Role",
 				ID:       roleID,
 			},
-		},
+		}
 	}
+
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
