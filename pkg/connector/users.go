@@ -126,10 +126,18 @@ func (o *userBuilder) CreateAccount(ctx context.Context, accountInfo *v2.Account
 
 func getCreateInvitationBody(accountInfo *v2.AccountInfo) (*client.CreateInvitationBody, error) {
 	pMap := accountInfo.Profile.AsMap()
-	firstName := pMap["firstName"].(string)
-	lastName := pMap["lastName"].(string)
-	role := pMap["role"].(string)
-
+	firstName := ""
+	lastName := ""
+	role := ""
+	if pMap["firstName"] != nil {
+		firstName = pMap["firstName"].(string)
+	}
+	if pMap["lastName"] != nil {
+		lastName = pMap["lastName"].(string)
+	}
+	if pMap["role"] != nil {
+		role = pMap["role"].(string)
+	}
 	return &client.CreateInvitationBody{
 		Email:     accountInfo.Login,
 		FirstName: firstName,
