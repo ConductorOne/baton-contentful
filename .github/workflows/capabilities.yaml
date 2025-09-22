@@ -24,7 +24,10 @@ jobs:
         run: go build -o connector ./cmd/baton-contentful
 
       - name: Run and save output
-        run: ./connector --organization-id=org-id --token=token capabilities > baton_capabilities.json
+        env:
+          BATON_TOKEN: "${{ secrets.BATON_TOKEN }}"
+          BATON_ORGANIZATION_ID: "${{ secrets.BATON_ORGANIZATION_ID }}"
+        run: ./connector capabilities > baton_capabilities.json
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9

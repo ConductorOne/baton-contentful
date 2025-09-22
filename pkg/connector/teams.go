@@ -55,10 +55,10 @@ func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	}
 
 	res, err := o.client.ListTeams(ctx, offset)
-	items := res.Items
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
 	}
+	items := res.Items
 
 	if len(items) == 0 {
 		return nil, "", nil, nil
