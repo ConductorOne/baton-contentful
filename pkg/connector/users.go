@@ -17,6 +17,8 @@ type userBuilder struct {
 	client *client.Client
 }
 
+var _ connectorbuilder.AccountManager = &userBuilder{}
+
 func (o *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
 	return userResourceType
 }
