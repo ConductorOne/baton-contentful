@@ -23,6 +23,27 @@ jobs:
           version: latest
           args: --timeout=3m
 
+  go-test:
+    strategy:
+      matrix:
+        platform: [ ubuntu-latest ]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Go
+        if: success()
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: go tests
+        run: (set -o pipefail && go test -v -covermode=count -json ./... | tee test.json)
+      - name: annotate go tests
+        if: always()
+        uses: guyarb/golang-test-annotations@v0.5.1
+        with:
+          test-results: test.json
+
   test-spaces:
     runs-on: ubuntu-latest
 
