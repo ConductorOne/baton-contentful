@@ -68,11 +68,11 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	}
 
 	res, err := o.client.ListUsers(ctx, offset)
-	users := res.Items
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
 	}
 
+	users := res.Items
 	if len(users) == 0 {
 		return nil, "", nil, nil
 	}
