@@ -167,9 +167,18 @@ func (o *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 	if len(resTeamMembership.Items) == 0 {
 		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 	}
-
-	teamMembershipID := resTeamMembership.Items[0].Sys.ID
-	err = o.client.DeleteTeamMembership(ctx, teamID, teamMembershipID)
+	// There may be memberships for other teams; we search for the one that belongs to this team.
+	var membershipID string
+	for _, tm := range resTeamMembership.Items {
+		if tm.Sys.Team.Sys.ID == teamID {
+			membershipID = tm.Sys.ID
+			break
+		}
+	}
+	if membershipID == "" {
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+	}
+	err = o.client.DeleteTeamMembership(ctx, teamID, membershipID)
 	if err != nil {
 		return nil, fmt.Errorf("baton-contentful: failed to delete team membership: %w", err)
 	}
