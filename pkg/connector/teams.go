@@ -109,6 +109,9 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 
 	rv := []*v2.Grant{}
 	for _, orgMembership := range res.Items {
+		if orgMembership.Sys.Team.Sys.ID != resource.Id.Resource {
+			continue
+		}
 		principalID, err := resourceSdk.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
 		if err != nil {
 			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
