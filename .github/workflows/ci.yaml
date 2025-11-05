@@ -112,7 +112,7 @@ jobs:
       - name: Run baton-contentful
         run: ./baton-contentful
       - name: Install baton
-        run: ./scripts/get-baton.sh && mv baton /usr/local/bin
+        uses: ConductorOne/github-workflows/actions/get-baton@v2
 
       # tests
       - name: Check for grant before revoking
