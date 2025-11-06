@@ -91,8 +91,13 @@ jobs:
       - name: Check grant was revoked
         run: |
           ./baton-contentful && \
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
-          jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
+          if baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
+             jq -e ".grants[]?.principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\"" > /dev/null 2>&1; then
+            echo "Error: Grant for principal ${{ env.CONNECTOR_PRINCIPAL }} still exists for entitlement ${{ env.CONNECTOR_ENTITLEMENT }} after revocation."
+            exit 1
+          else
+            echo "Success: Grant for principal ${{ env.CONNECTOR_PRINCIPAL }} successfully revoked from entitlement ${{ env.CONNECTOR_ENTITLEMENT }}."
+          fi
 
       - name: Grant entitlement
         run: |
@@ -154,8 +159,13 @@ jobs:
       - name: Check grant was revoked
         run: |
           ./baton-contentful && \
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
-          jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
+          if baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
+             jq -e ".grants[]?.principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\"" > /dev/null 2>&1; then
+            echo "Error: Grant for principal ${{ env.CONNECTOR_PRINCIPAL }} still exists for entitlement ${{ env.CONNECTOR_ENTITLEMENT }} after revocation."
+            exit 1
+          else
+            echo "Success: Grant for principal ${{ env.CONNECTOR_PRINCIPAL }} successfully revoked from entitlement ${{ env.CONNECTOR_ENTITLEMENT }}."
+          fi
 
       - name: Grant entitlement
         run: |
