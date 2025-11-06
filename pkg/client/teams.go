@@ -60,6 +60,31 @@ func (c *Client) ListTeamMemberships(ctx context.Context, offset int) (*GetTeamM
 	return &res, nil
 }
 
+func (c *Client) ListTeamMembershipsByTeam(ctx context.Context, teamID string, offset int) (*GetTeamMembershipsResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations/%s/teams/%s/team_memberships", BaseURL, c.orgID, teamID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	SetQueryParams(req.URL, map[string]string{
+		"limit": fmt.Sprintf("%d", defaultLimit),
+		"skip":  fmt.Sprintf("%d", offset),
+	})
+
+	var res GetTeamMembershipsResponse
+	resp, err := c.Do(req,
+		uhttp.WithJSONResponse(&res),
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	return &res, nil
+}
+
 func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMembershipID string) (*TeamMembership, error) {
 	body := map[string]interface{}{
 		"organizationMembershipId": orgMembershipID,

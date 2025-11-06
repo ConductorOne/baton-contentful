@@ -97,9 +97,10 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 		}
 	}
 
-	res, err := o.client.ListTeamMemberships(ctx, offset)
+	teamID := resource.Id.Resource
+	res, err := o.client.ListTeamMembershipsByTeam(ctx, teamID, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list team memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
@@ -108,13 +109,10 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
 	rv := []*v2.Grant{}
-	for _, orgMembership := range res.Items {
-		if orgMembership.Sys.Team.Sys.ID != resource.Id.Resource {
-			continue
-		}
-		principalID, err := resourceSdk.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
+	for _, tm := range res.Items {
+		principalID, err := resourceSdk.NewResourceID(userResourceType, tm.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
+			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", tm.Sys.User.Sys.ID, err)
 		}
 		rv = append(rv, grant.NewGrant(
 			resource,
