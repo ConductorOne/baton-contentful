@@ -48,10 +48,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CONNECTOR_GRANT: 'space:a67xy1bo0w3z:Editor:user:2ZsjuQFlJzc2W9RteSqLTG'
-      CONNECTOR_ENTITLEMENT: 'space:a67xy1bo0w3z:Editor'
-      CONNECTOR_PRINCIPAL: '2ZsjuQFlJzc2W9RteSqLTG'
-      CONNECTOR_PRINCIPAL_TYPE: 'user'
+      CONNECTOR_GRANT: "${{ vars.TEST_SPACES_GRANT }}"
+      CONNECTOR_ENTITLEMENT: "${{ vars.TEST_SPACES_ENTITLEMENT }}"
+      CONNECTOR_PRINCIPAL: "${{ vars.TEST_SPACES_PRINCIPAL }}"
+      CONNECTOR_PRINCIPAL_TYPE: "${{ vars.TEST_PRINCIPAL_TYPE || 'user' }}"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,7 +66,21 @@ jobs:
       - name: Install baton
         uses: ConductorOne/github-workflows/actions/get-baton@v2
 
-      - name: Check for grant before revoking
+      - name: Ensure grant exists before revoking
+        run: |
+          ./baton-contentful && \
+          if ! baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
+               jq -e ".grants[]?.principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\"" > /dev/null; then
+            echo "Grant does not exist, creating it first..."
+            ./baton-contentful --grant-entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" \
+                              --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" \
+                              --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
+            ./baton-contentful
+          else
+            echo "Grant already exists, proceeding with revoke test..."
+          fi
+
+      - name: Verify grant exists before revoking
         run: |
           baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
           jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\"" | grep -q "true"
@@ -96,10 +110,10 @@ jobs:
   test-teams:
     runs-on: ubuntu-latest
     env:
-      CONNECTOR_GRANT: 'team:4ZzPNkbOIIPFtEE865PcR1:member:user:00CoSVFyMvtNITGaaUzBwJ'
-      CONNECTOR_ENTITLEMENT: 'team:4ZzPNkbOIIPFtEE865PcR1:member'
-      CONNECTOR_PRINCIPAL: '00CoSVFyMvtNITGaaUzBwJ'
-      CONNECTOR_PRINCIPAL_TYPE: 'user'
+      CONNECTOR_GRANT: "${{ vars.TEST_TEAMS_GRANT }}"
+      CONNECTOR_ENTITLEMENT: "${{ vars.TEST_TEAMS_ENTITLEMENT }}"
+      CONNECTOR_PRINCIPAL: "${{ vars.TEST_TEAMS_PRINCIPAL }}"
+      CONNECTOR_PRINCIPAL_TYPE: "${{ vars.TEST_PRINCIPAL_TYPE || 'user' }}"
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -115,7 +129,21 @@ jobs:
         uses: ConductorOne/github-workflows/actions/get-baton@v2
 
       # tests
-      - name: Check for grant before revoking
+      - name: Ensure grant exists before revoking
+        run: |
+          ./baton-contentful && \
+          if ! baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
+               jq -e ".grants[]?.principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\"" > /dev/null; then
+            echo "Grant does not exist, creating it first..."
+            ./baton-contentful --grant-entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" \
+                              --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" \
+                              --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
+            ./baton-contentful
+          else
+            echo "Grant already exists, proceeding with revoke test..."
+          fi
+
+      - name: Verify grant exists before revoking
         run: |
           baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | \
           jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
