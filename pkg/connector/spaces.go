@@ -332,7 +332,6 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 	// For role-based grants, verify the role exists in the membership
 	roleID, err := o.cacheGetRoleID(ctx, spaceID, roleName)
 	if err != nil {
-		fmt.Printf("failed to get role ID for role %s: %v", roleName, err)
 		return nil, fmt.Errorf("baton-contentful: failed to get role ID for role %s: %w", roleName, err)
 	}
 
