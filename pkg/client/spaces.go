@@ -129,6 +129,40 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 	return &res, nil
 }
 
+func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMembershipID, email string, roles []LinkSys, isAdmin bool) error {
+	body := map[string]interface{}{
+		"admin": isAdmin,
+		"email": email,
+	}
+
+	if len(roles) > 0 {
+		body["roles"] = roles
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/spaces/%s/space_memberships/%s", BaseURL, spaceID, spaceMembershipID), bytes.NewReader(bodyBytes))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
+
+	resp, err := c.Do(req,
+		uhttp.WithErrorResponse(&ErrorResponse{}),
+	)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+
 func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMembershipID string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/spaces/%s/space_memberships/%s", BaseURL, spaceID, spaceMembershipID), nil)
 	if err != nil {
