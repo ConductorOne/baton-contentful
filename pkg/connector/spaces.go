@@ -394,7 +394,7 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 	}
 
 	// Update the membership with remaining roles
-	err = o.client.UpdateSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID, resUser.Items[0].Email, newRoles, spaceMembership.Admin)
+	err = o.client.UpdateSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID, resUser.Items[0].Email, newRoles, spaceMembership.Admin, spaceMembership.Sys.Version)
 	if err != nil {
 		return nil, fmt.Errorf("baton-contentful: failed to update space membership: %w", err)
 	}

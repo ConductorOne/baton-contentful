@@ -129,7 +129,7 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 	return &res, nil
 }
 
-func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMembershipID, email string, roles []LinkSys, isAdmin bool) error {
+func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMembershipID, email string, roles []LinkSys, isAdmin bool, version int) error {
 	body := map[string]interface{}{
 		"admin": isAdmin,
 		"email": email,
@@ -150,6 +150,7 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 	}
 
 	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
+	req.Header.Set("X-Contentful-Version", fmt.Sprintf("%d", version))
 
 	resp, err := c.Do(req,
 		uhttp.WithErrorResponse(&ErrorResponse{}),
