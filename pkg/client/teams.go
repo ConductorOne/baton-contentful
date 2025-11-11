@@ -1,11 +1,10 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
@@ -89,17 +88,19 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 	body := map[string]interface{}{
 		"organizationMembershipId": orgMembershipID,
 	}
-	bodyBytes, err := json.Marshal(body)
+
+	reqURL, err := url.Parse(fmt.Sprintf("%s/organizations/%s/teams/%s/team_memberships", BaseURL, c.orgID, teamID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
+		uhttp.WithJSONBody(body),
+		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/organizations/%s/teams/%s/team_memberships", BaseURL, c.orgID, teamID), bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
 	var res TeamMembership
 	resp, err := c.Do(req,

@@ -1,11 +1,10 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
@@ -61,15 +60,18 @@ func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersRespo
 }
 
 func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBody) (*Invitation, error) {
-	bodyBytes, err := json.Marshal(body)
+	reqURL, err := url.Parse(fmt.Sprintf("%s/organizations/%s/invitations", BaseURL, c.orgID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, fmt.Errorf("failed to parse URL: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/organizations/%s/invitations", BaseURL, c.orgID), bytes.NewReader(bodyBytes))
+
+	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
+		uhttp.WithJSONBody(body),
+		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
 
 	var res Invitation
 	resp, err := c.Do(req,

@@ -1,11 +1,10 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
@@ -103,22 +102,24 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 		}
 	}
 
-	bodyBytes, err := json.Marshal(body)
+	reqURL, err := url.Parse(fmt.Sprintf("%s/spaces/%s/space_memberships", BaseURL, spaceID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, fmt.Errorf("failed to parse URL: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/spaces/%s/space_memberships", BaseURL, spaceID), bytes.NewReader(bodyBytes))
+	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
+		uhttp.WithJSONBody(body),
+		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
-
 	var res SpaceMembership
+	var errorResp ErrorResponse
 	resp, err := c.Do(req,
 		uhttp.WithJSONResponse(&res),
-		uhttp.WithErrorResponse(&ErrorResponse{}),
+		uhttp.WithErrorResponse(&errorResp),
 	)
 	if err != nil {
 		return nil, err
@@ -139,18 +140,19 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 		body["roles"] = roles
 	}
 
-	bodyBytes, err := json.Marshal(body)
+	reqURL, err := url.Parse(fmt.Sprintf("%s/spaces/%s/space_memberships/%s", BaseURL, spaceID, spaceMembershipID))
 	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
+		return fmt.Errorf("failed to parse URL: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/spaces/%s/space_memberships/%s", BaseURL, spaceID, spaceMembershipID), bytes.NewReader(bodyBytes))
+	req, err := c.NewRequest(ctx, http.MethodPut, reqURL,
+		uhttp.WithJSONBody(body),
+		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+		uhttp.WithHeader("X-Contentful-Version", fmt.Sprintf("%d", version)),
+	)
 	if err != nil {
 		return err
 	}
-
-	req.Header.Set("Content-Type", "application/vnd.contentful.management.v1+json")
-	req.Header.Set("X-Contentful-Version", fmt.Sprintf("%d", version))
 
 	resp, err := c.Do(req,
 		uhttp.WithErrorResponse(&ErrorResponse{}),

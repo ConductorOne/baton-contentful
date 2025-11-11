@@ -275,6 +275,73 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 		return nil, fmt.Errorf("baton-contentful: role ID must be provided for non-admin space memberships")
 	}
 
+	// Check if the user already has a space membership
+	resSpaceMembership, err := o.client.GetSpaceMembershipByUser(ctx, spaceID, principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	// If membership exists, update it instead of creating a new one
+	if len(resSpaceMembership.Items) > 0 {
+		spaceMembership := resSpaceMembership.Items[0]
+
+		// If granting admin and user is already admin, grant already exists
+		if isAdmin && spaceMembership.Admin {
+			return annotations.New(&v2.GrantAlreadyExists{}), nil
+		}
+
+		// If granting a role, check if the role already exists
+		if !isAdmin {
+			roleFound := false
+			for _, role := range spaceMembership.Roles {
+				if role.Sys.ID == roleID {
+					roleFound = true
+					break
+				}
+			}
+			if roleFound {
+				return annotations.New(&v2.GrantAlreadyExists{}), nil
+			}
+		}
+
+		// Build the updated roles list
+		newRoles := []client.LinkSys{}
+		for _, role := range spaceMembership.Roles {
+			newRoles = append(newRoles, client.LinkSys{
+				Type:     "Link",
+				LinkType: "Role",
+				ID:       role.Sys.ID,
+			})
+		}
+
+		// Add the new role if not admin
+		if !isAdmin {
+			newRoles = append(newRoles, client.LinkSys{
+				Type:     "Link",
+				LinkType: "Role",
+				ID:       roleID,
+			})
+		}
+
+		// Update the membership
+		// If granting a role to an admin, remove admin status (admin and roles are mutually exclusive)
+		// If granting admin, set admin to true
+		var newAdmin bool
+		if isAdmin {
+			newAdmin = true
+		} else {
+			// Granting a role - remove admin if user was admin
+			newAdmin = false
+		}
+
+		err = o.client.UpdateSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID, email, newRoles, newAdmin, spaceMembership.Sys.Version)
+		if err != nil {
+			return nil, fmt.Errorf("baton-contentful: failed to update space membership: %w", err)
+		}
+		return nil, nil
+	}
+
+	// No existing membership, create a new one
 	_, err = o.client.CreateSpaceMembership(ctx, spaceID, email, roleID, isAdmin)
 	if err != nil {
 		errStr := err.Error()
