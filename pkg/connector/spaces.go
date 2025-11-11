@@ -305,32 +305,30 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 		}
 
 		// Build the updated roles list
-		newRoles := []client.LinkSys{}
-		for _, role := range spaceMembership.Roles {
-			newRoles = append(newRoles, client.LinkSys{
-				Type:     "Link",
-				LinkType: "Role",
-				ID:       role.Sys.ID,
-			})
-		}
+		var newRoles []client.LinkSys
+		var newAdmin bool
 
-		// Add the new role if not admin
-		if !isAdmin {
+		if isAdmin {
+			// Granting admin - roles must be empty (admin and roles are mutually exclusive in Contentful)
+			// This will remove ALL existing roles and set admin to true
+			newRoles = []client.LinkSys{}
+			newAdmin = true
+		} else {
+			newRoles = []client.LinkSys{}
+			for _, role := range spaceMembership.Roles {
+				newRoles = append(newRoles, client.LinkSys{
+					Type:     "Link",
+					LinkType: "Role",
+					ID:       role.Sys.ID,
+				})
+			}
+			// Add the new role
 			newRoles = append(newRoles, client.LinkSys{
 				Type:     "Link",
 				LinkType: "Role",
 				ID:       roleID,
 			})
-		}
-
-		// Update the membership
-		// If granting a role to an admin, remove admin status (admin and roles are mutually exclusive)
-		// If granting admin, set admin to true
-		var newAdmin bool
-		if isAdmin {
-			newAdmin = true
-		} else {
-			// Granting a role - remove admin if user was admin
+			// Remove admin if user was admin
 			newAdmin = false
 		}
 

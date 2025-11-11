@@ -136,7 +136,7 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 		"email": email,
 	}
 
-	if len(roles) > 0 {
+	if roles != nil {
 		body["roles"] = roles
 	}
 
