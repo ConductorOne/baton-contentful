@@ -14,6 +14,7 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"google.golang.org/grpc/status"
 )
 
 const spaceAdmin = "admin"
@@ -274,8 +275,89 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 		return nil, fmt.Errorf("baton-contentful: role ID must be provided for non-admin space memberships")
 	}
 
+	// Check if the user already has a space membership
+	resSpaceMembership, err := o.client.GetSpaceMembershipByUser(ctx, spaceID, principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	// If membership exists, update it instead of creating a new one
+	if len(resSpaceMembership.Items) > 0 {
+		spaceMembership := resSpaceMembership.Items[0]
+
+		// If granting admin and user is already admin, grant already exists
+		if isAdmin && spaceMembership.Admin {
+			return annotations.New(&v2.GrantAlreadyExists{}), nil
+		}
+
+		// If granting a role, check if the role already exists
+		if !isAdmin {
+			roleFound := false
+			for _, role := range spaceMembership.Roles {
+				if role.Sys.ID == roleID {
+					roleFound = true
+					break
+				}
+			}
+			if roleFound {
+				return annotations.New(&v2.GrantAlreadyExists{}), nil
+			}
+		}
+
+		// Build the updated roles list
+		var newRoles []client.LinkSys
+		var newAdmin bool
+
+		if isAdmin {
+			// Granting admin - roles must be empty (admin and roles are mutually exclusive in Contentful)
+			// This will remove ALL existing roles and set admin to true
+			newRoles = []client.LinkSys{}
+			newAdmin = true
+		} else {
+			newRoles = []client.LinkSys{}
+			for _, role := range spaceMembership.Roles {
+				newRoles = append(newRoles, client.LinkSys{
+					Type:     "Link",
+					LinkType: "Role",
+					ID:       role.Sys.ID,
+				})
+			}
+			// Add the new role
+			newRoles = append(newRoles, client.LinkSys{
+				Type:     "Link",
+				LinkType: "Role",
+				ID:       roleID,
+			})
+			// Remove admin if user was admin
+			newAdmin = false
+		}
+
+		err = o.client.UpdateSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID, email, newRoles, newAdmin, spaceMembership.Sys.Version)
+		if err != nil {
+			return nil, fmt.Errorf("baton-contentful: failed to update space membership: %w", err)
+		}
+		return nil, nil
+	}
+
+	// No existing membership, create a new one
 	_, err = o.client.CreateSpaceMembership(ctx, spaceID, email, roleID, isAdmin)
 	if err != nil {
+		errStr := err.Error()
+		if st, ok := status.FromError(err); ok {
+			msg := st.Message()
+			if msg != "" {
+				errStr = msg + " | " + errStr
+			}
+		}
+
+		// If it's a 422 error, return GrantAlreadyExists
+		is422Error := strings.Contains(errStr, "422") ||
+			strings.Contains(errStr, "Unprocessable Entity") ||
+			strings.Contains(errStr, "\"name\":\"taken\"")
+
+		if is422Error {
+			return annotations.New(&v2.GrantAlreadyExists{}), nil
+		}
 		return nil, err
 	}
 	return nil, nil
@@ -285,6 +367,7 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 	principal := grant.Principal
 	entitlement := grant.Entitlement
 	spaceID := entitlement.Resource.Id.Resource
+	roleName := strings.Split(entitlement.Id, ":")[2]
 
 	resSpaceMembership, err := o.client.GetSpaceMembershipByUser(ctx, spaceID, principal.Id.Resource)
 	if err != nil {
@@ -295,11 +378,92 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 	}
 
-	spaceMembershipID := resSpaceMembership.Items[0].Sys.ID
-	err = o.client.DeleteSpaceMembership(ctx, spaceID, spaceMembershipID)
-	if err != nil {
-		return nil, fmt.Errorf("baton-contentful: failed to delete team membership: %w", err)
+	spaceMembership := resSpaceMembership.Items[0]
+	isAdmin := roleName == spaceAdmin
+
+	// If revoking admin grant, verify the user is actually an admin
+	if isAdmin {
+		if !spaceMembership.Admin {
+			return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+		}
+		// For admin, we delete the entire membership
+		err = o.client.DeleteSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID)
+		if err != nil {
+			return nil, fmt.Errorf("baton-contentful: failed to delete space membership: %w", err)
+		}
+		return nil, nil
 	}
+
+	// For role-based grants, verify the role exists in the membership
+	roleID, err := o.cacheGetRoleID(ctx, spaceID, roleName)
+	if err != nil {
+		return nil, fmt.Errorf("baton-contentful: failed to get role ID for role %s: %w", roleName, err)
+	}
+
+	// Check if the role is in the membership's roles
+	roleFound := false
+	for _, role := range spaceMembership.Roles {
+		if role.Sys.ID == roleID {
+			roleFound = true
+			break
+		}
+	}
+
+	if !roleFound {
+		// Role not found in membership - grant already revoked
+		// If user has no other roles and is not admin, they shouldn't be in the space
+		// But we return GrantAlreadyRevoked because the specific grant doesn't exist
+		if len(spaceMembership.Roles) == 0 && !spaceMembership.Admin {
+			// User has no roles and is not admin - clean up by removing membership
+			err = o.client.DeleteSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID)
+			if err != nil {
+				return nil, fmt.Errorf("baton-contentful: failed to delete space membership: %w", err)
+			}
+			return nil, nil
+		}
+		// User has other roles or is admin - grant for this specific role already revoked
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+	}
+
+	// If user has only this role, delete the entire membership
+	// Otherwise, we need to update the membership to remove this specific role
+	if len(spaceMembership.Roles) == 1 {
+		// Only one role, delete entire membership
+		err = o.client.DeleteSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID)
+		if err != nil {
+			return nil, fmt.Errorf("baton-contentful: failed to delete space membership: %w", err)
+		}
+		return nil, nil
+	}
+
+	// Multiple roles: update membership to remove this role
+	// Get user email for the update
+	resUser, err := o.client.GetUserByID(ctx, principal.Id.Resource)
+	if err != nil {
+		return nil, fmt.Errorf("baton-contentful: failed to get user: %w", err)
+	}
+	if len(resUser.Items) == 0 {
+		return nil, fmt.Errorf("baton-contentful: user not found: %s", principal.Id.Resource)
+	}
+
+	// Build new roles list without the revoked role
+	newRoles := []client.LinkSys{}
+	for _, role := range spaceMembership.Roles {
+		if role.Sys.ID != roleID {
+			newRoles = append(newRoles, client.LinkSys{
+				Type:     "Link",
+				LinkType: "Role",
+				ID:       role.Sys.ID,
+			})
+		}
+	}
+
+	// Update the membership with remaining roles
+	err = o.client.UpdateSpaceMembership(ctx, spaceID, spaceMembership.Sys.ID, resUser.Items[0].Email, newRoles, spaceMembership.Admin, spaceMembership.Sys.Version)
+	if err != nil {
+		return nil, fmt.Errorf("baton-contentful: failed to update space membership: %w", err)
+	}
+
 	return nil, nil
 }
 

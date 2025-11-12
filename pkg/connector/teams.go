@@ -97,9 +97,10 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 		}
 	}
 
-	res, err := o.client.ListTeamMemberships(ctx, offset)
+	teamID := resource.Id.Resource
+	res, err := o.client.ListTeamMembershipsByTeam(ctx, teamID, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
+		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list team memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
@@ -108,10 +109,10 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
 	rv := []*v2.Grant{}
-	for _, orgMembership := range res.Items {
-		principalID, err := resourceSdk.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
+	for _, tm := range res.Items {
+		principalID, err := resourceSdk.NewResourceID(userResourceType, tm.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
+			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", tm.Sys.User.Sys.ID, err)
 		}
 		rv = append(rv, grant.NewGrant(
 			resource,
@@ -134,6 +135,20 @@ func (o *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 	}
 
 	orgMembershipID := res.Items[0].Sys.ID
+
+	// Check if the user already has a team membership for this team
+	resTeamMembership, err := o.client.GetTeamMembershipByUser(ctx, orgMembershipID)
+	if err != nil {
+		return nil, fmt.Errorf("baton-contentful: failed to get team membership: %w", err)
+	}
+
+	// Check if membership already exists for this team
+	for _, tm := range resTeamMembership.Items {
+		if tm.Sys.Team.Sys.ID == teamId {
+			return annotations.New(&v2.GrantAlreadyExists{}), nil
+		}
+	}
+
 	_, err = o.client.CreateTeamMembership(ctx, teamId, orgMembershipID)
 	if err != nil {
 		return nil, err
@@ -164,9 +179,18 @@ func (o *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 	if len(resTeamMembership.Items) == 0 {
 		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
 	}
-
-	teamMembershipID := resTeamMembership.Items[0].Sys.ID
-	err = o.client.DeleteTeamMembership(ctx, teamID, teamMembershipID)
+	// There may be memberships for other teams; we search for the one that belongs to this team.
+	var membershipID string
+	for _, tm := range resTeamMembership.Items {
+		if tm.Sys.Team.Sys.ID == teamID {
+			membershipID = tm.Sys.ID
+			break
+		}
+	}
+	if membershipID == "" {
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+	}
+	err = o.client.DeleteTeamMembership(ctx, teamID, membershipID)
 	if err != nil {
 		return nil, fmt.Errorf("baton-contentful: failed to delete team membership: %w", err)
 	}
