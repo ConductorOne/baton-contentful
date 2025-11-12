@@ -70,10 +70,9 @@ jobs:
         uses: ConductorOne/github-workflows/actions/sync-test@v2
         with:
           connector: ./baton-contentful
-          grant: "${{ env.CONNECTOR_GRANT }}"
-          entitlement: "${{ env.CONNECTOR_ENTITLEMENT }}"
-          principal: "${{ env.CONNECTOR_PRINCIPAL }}"
-          principal-type: "${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
+          baton-entitlement: "${{ env.CONNECTOR_ENTITLEMENT }}"
+          baton-principal: "${{ env.CONNECTOR_PRINCIPAL }}"
+          baton-principal-type: "${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
 
   test-teams:
     runs-on: ubuntu-latest
@@ -100,8 +99,7 @@ jobs:
         uses: ConductorOne/github-workflows/actions/sync-test@v2
         with:
           connector: ./baton-contentful
-          grant: "${{ env.CONNECTOR_GRANT }}"
-          entitlement: "${{ env.CONNECTOR_ENTITLEMENT }}"
-          principal: "${{ env.CONNECTOR_PRINCIPAL }}"
-          principal-type: "${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
+          baton-entitlement: "${{ env.CONNECTOR_ENTITLEMENT }}"
+          baton-principal: "${{ env.CONNECTOR_PRINCIPAL }}"
+          baton-principal-type: "${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
 
