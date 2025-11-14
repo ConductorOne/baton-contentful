@@ -5,13 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"time"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations/%s/users", BaseURL, c.orgID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "users")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +43,13 @@ func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, 
 }
 
 func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations/%s/users", BaseURL, c.orgID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "users")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +73,12 @@ func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersRespo
 }
 
 func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBody) (*Invitation, error) {
-	reqURL, err := url.Parse(fmt.Sprintf("%s/organizations/%s/invitations", BaseURL, c.orgID))
+	baseURL, err := url.Parse(BaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL: %w", err)
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "invitations")
+	reqURL := baseURL
 
 	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
 		uhttp.WithJSONBody(body),

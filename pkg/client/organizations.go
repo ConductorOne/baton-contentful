@@ -4,12 +4,20 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganizationsResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations", BaseURL), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +43,13 @@ func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganiz
 
 // https://www.contentful.com/developers/docs/references/user-management-api/#/reference/organization-memberships
 func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*GetOrganizationMembershipsResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations/%s/organization_memberships", BaseURL, c.orgID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "organization_memberships")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +74,13 @@ func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*
 }
 
 func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID string) (*GetOrganizationMembershipsResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations/%s/organization_memberships", BaseURL, c.orgID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "organization_memberships")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +104,13 @@ func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID str
 }
 
 func (c *Client) DeleteOrganizationMembership(ctx context.Context, orgMembershipID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/organizations/%s/organization_memberships/%s", BaseURL, c.orgID, orgMembershipID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "organization_memberships", orgMembershipID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, baseURL.String(), nil)
 	if err != nil {
 		return err
 	}

@@ -5,12 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces", BaseURL), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "spaces")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +44,13 @@ func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse
 // https://www.contentful.com/developers/docs/references/content-management-api/#/reference/roles/roles-collection/get-all-roles/console/curl
 // https://www.contentful.com/help/roles/space-roles-and-permissions/
 func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string, offset int) (*GetSpaceRolesResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces/%s/roles", BaseURL, spaceID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "spaces", spaceID, "roles")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +75,13 @@ func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string, offset int)
 }
 
 func (c *Client) ListSpaceMembers(ctx context.Context, spaceID string, offset int) (*GetSpaceMembershipsResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/spaces/%s/space_members", BaseURL, spaceID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "spaces", spaceID, "space_members")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -102,10 +121,12 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 		}
 	}
 
-	reqURL, err := url.Parse(fmt.Sprintf("%s/spaces/%s/space_memberships", BaseURL, spaceID))
+	baseURL, err := url.Parse(BaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL: %w", err)
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
+	baseURL.Path = path.Join(baseURL.Path, "spaces", spaceID, "space_memberships")
+	reqURL := baseURL
 
 	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
 		uhttp.WithJSONBody(body),
@@ -140,10 +161,12 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 		body["roles"] = roles
 	}
 
-	reqURL, err := url.Parse(fmt.Sprintf("%s/spaces/%s/space_memberships/%s", BaseURL, spaceID, spaceMembershipID))
+	baseURL, err := url.Parse(BaseURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL: %w", err)
+		return fmt.Errorf("failed to parse base URL: %w", err)
 	}
+	baseURL.Path = path.Join(baseURL.Path, "spaces", spaceID, "space_memberships", spaceMembershipID)
+	reqURL := baseURL
 
 	req, err := c.NewRequest(ctx, http.MethodPut, reqURL,
 		uhttp.WithJSONBody(body),
@@ -167,7 +190,13 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 }
 
 func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMembershipID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/spaces/%s/space_memberships/%s", BaseURL, spaceID, spaceMembershipID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "spaces", spaceID, "space_memberships", spaceMembershipID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, baseURL.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -185,7 +214,13 @@ func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMember
 }
 
 func (c *Client) GetSpaceMembershipByUser(ctx context.Context, spaceID, userID string) (*GetSpaceMembershipsResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/organizations/%s/space_memberships", BaseURL, c.orgID), nil)
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base URL: %w", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "space_memberships")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
