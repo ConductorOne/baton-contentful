@@ -85,7 +85,7 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 
 	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
 		uhttp.WithJSONBody(body),
-		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+		uhttp.WithHeader("Content-Type", contentTypeManagementAPI),
 	)
 	if err != nil {
 		return nil, err

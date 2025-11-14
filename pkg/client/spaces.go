@@ -129,7 +129,7 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 
 	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
 		uhttp.WithJSONBody(body),
-		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+		uhttp.WithHeader("Content-Type", contentTypeManagementAPI),
 	)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 
 	req, err := c.NewRequest(ctx, http.MethodPut, reqURL,
 		uhttp.WithJSONBody(body),
-		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+		uhttp.WithHeader("Content-Type", contentTypeManagementAPI),
 		uhttp.WithHeader("X-Contentful-Version", fmt.Sprintf("%d", version)),
 	)
 	if err != nil {
