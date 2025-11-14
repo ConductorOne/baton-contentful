@@ -81,7 +81,7 @@ func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBod
 
 	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
 		uhttp.WithJSONBody(body),
-		uhttp.WithHeader("Content-Type", "application/vnd.contentful.management.v1+json"),
+		uhttp.WithHeader("Content-Type", contentTypeManagementAPI),
 	)
 	if err != nil {
 		return nil, err

@@ -9,6 +9,7 @@ import (
 
 const BaseURL = "https://api.contentful.com"
 const defaultLimit = 100
+const contentTypeManagementAPI = "application/vnd.contentful.management.v1+json"
 
 type Client struct {
 	*uhttp.BaseHttpClient
