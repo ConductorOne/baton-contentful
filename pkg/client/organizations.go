@@ -43,13 +43,13 @@ func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganiz
 
 // https://www.contentful.com/developers/docs/references/user-management-api/#/reference/organization-memberships
 func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*GetOrganizationMembershipsResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "organization_memberships")
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "organization_memberships")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -74,13 +74,13 @@ func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*
 }
 
 func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID string) (*GetOrganizationMembershipsResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "organization_memberships")
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "organization_memberships")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
