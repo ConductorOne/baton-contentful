@@ -12,13 +12,13 @@ import (
 )
 
 func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "users")
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "users")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43,13 +43,13 @@ func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, 
 }
 
 func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "users")
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "users")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -73,12 +73,11 @@ func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersRespo
 }
 
 func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBody) (*Invitation, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "invitations")
-	reqURL := baseURL
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "invitations")
 
 	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
 		uhttp.WithJSONBody(body),

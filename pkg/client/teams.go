@@ -11,13 +11,13 @@ import (
 )
 
 func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "teams")
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "teams")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42,13 +42,13 @@ func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, 
 }
 
 func (c *Client) ListTeamMembershipsByTeam(ctx context.Context, teamID string, offset int) (*GetTeamMembershipsResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "teams", teamID, "team_memberships")
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "teams", teamID, "team_memberships")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +77,11 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 		"organizationMembershipId": orgMembershipID,
 	}
 
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "teams", teamID, "team_memberships")
-	reqURL := baseURL
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "teams", teamID, "team_memberships")
 
 	req, err := c.NewRequest(ctx, http.MethodPost, reqURL,
 		uhttp.WithJSONBody(body),
@@ -107,13 +106,13 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 }
 
 func (c *Client) GetTeamMembershipByUser(ctx context.Context, orgMembershipID string) (*GetTeamMembershipsResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "team_memberships")
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "team_memberships")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -137,13 +136,13 @@ func (c *Client) GetTeamMembershipByUser(ctx context.Context, orgMembershipID st
 }
 
 func (c *Client) DeleteTeamMembership(ctx context.Context, teamID, teamMembershipID string) error {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "teams", teamID, "team_memberships", teamMembershipID)
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "teams", teamID, "team_memberships", teamMembershipID)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, reqURL.String(), nil)
 	if err != nil {
 		return err
 	}

@@ -11,13 +11,13 @@ import (
 )
 
 func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganizationsResponse, error) {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations")
+	reqURL.Path = path.Join(reqURL.Path, "organizations")
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -104,13 +104,13 @@ func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID str
 }
 
 func (c *Client) DeleteOrganizationMembership(ctx context.Context, orgMembershipID string) error {
-	baseURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(BaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse base URL: %w", err)
 	}
-	baseURL.Path = path.Join(baseURL.Path, "organizations", c.orgID, "organization_memberships", orgMembershipID)
+	reqURL.Path = path.Join(reqURL.Path, "organizations", c.orgID, "organization_memberships", orgMembershipID)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, reqURL.String(), nil)
 	if err != nil {
 		return err
 	}
