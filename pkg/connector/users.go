@@ -116,13 +116,23 @@ func (o *userBuilder) CreateAccount(ctx context.Context, accountInfo *v2.Account
 		return nil, nil, nil, err
 	}
 
-	invitation, err := o.client.CreateInvitation(ctx, body)
+	_, err = o.client.CreateInvitation(ctx, body)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("baton-contentful: cannot create invitation: %w", err)
 	}
 
-	return &v2.CreateAccountResponse_ActionRequiredResult{
-		Message: invitation.Sys.InvitationURL,
+	var userResource *v2.Resource
+	resUser, err := o.client.GetUserByID(ctx, accountInfo.Login)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("baton-contentful: failed to get user after invitation: %w", err)
+	}
+	if len(resUser.Items) > 0 {
+		userResource = o.userResource(ctx, resUser.Items[0])
+	}
+
+	return &v2.CreateAccountResponse_SuccessResult{
+		Resource:              userResource,
+		IsCreateAccountResult: true,
 	}, nil, nil, nil
 }
 
