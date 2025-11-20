@@ -123,7 +123,10 @@ func (o *userBuilder) CreateAccount(ctx context.Context, accountInfo *v2.Account
 
 	var userResource *v2.Resource
 	resUser, err := o.client.GetUserByID(ctx, accountInfo.Login)
-	if err == nil && len(resUser.Items) > 0 {
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("baton-contentful: failed to get user after invitation: %w", err)
+	}
+	if len(resUser.Items) > 0 {
 		userResource = o.userResource(ctx, resUser.Items[0])
 	}
 
