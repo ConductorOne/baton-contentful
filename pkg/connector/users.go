@@ -122,7 +122,7 @@ func (o *userBuilder) CreateAccount(ctx context.Context, accountInfo *v2.Account
 	}
 
 	var userResource *v2.Resource
-	resUser, err := o.client.GetUserByID(ctx, accountInfo.Login)
+	resUser, err := o.client.GetUserByID(ctx, body.Email)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("baton-contentful: failed to get user after invitation: %w", err)
 	}
@@ -141,6 +141,8 @@ func getCreateInvitationBody(accountInfo *v2.AccountInfo) (*client.CreateInvitat
 	firstName := ""
 	lastName := ""
 	role := ""
+	email := ""
+
 	if pMap["firstName"] != nil {
 		firstName = pMap["firstName"].(string)
 	}
@@ -150,8 +152,30 @@ func getCreateInvitationBody(accountInfo *v2.AccountInfo) (*client.CreateInvitat
 	if pMap["role"] != nil {
 		role = pMap["role"].(string)
 	}
+	if pMap["email"] != nil {
+		if emailStr, ok := pMap["email"].(string); ok {
+			email = emailStr
+		}
+	}
+
+	if email == "" && len(accountInfo.Emails) > 0 {
+		for _, e := range accountInfo.Emails {
+			if e.IsPrimary {
+				email = e.Address
+				break
+			}
+		}
+		if email == "" {
+			email = accountInfo.Emails[0].Address
+		}
+	}
+
+	if email == "" {
+		email = accountInfo.Login
+	}
+
 	return &client.CreateInvitationBody{
-		Email:     accountInfo.Login,
+		Email:     email,
 		FirstName: firstName,
 		LastName:  lastName,
 		Role:      role,
