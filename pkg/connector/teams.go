@@ -73,7 +73,6 @@ func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
-// Entitlements always returns an empty slice for users.
 func (o *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
 	return []*v2.Entitlement{
 		entitlement.NewAssignmentEntitlement(
@@ -86,7 +85,6 @@ func (o *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ r
 	}, nil, nil
 }
 
-// Grants always returns an empty slice for users since they don't have any entitlements.
 func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, attrs rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var offset int
 	var err error

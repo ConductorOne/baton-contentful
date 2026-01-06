@@ -53,7 +53,7 @@ func (o *spaceBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId
 
 	res, err := o.client.ListSpaces(ctx, offset)
 	if err != nil {
-		return nil, nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
+		return nil, nil, fmt.Errorf("baton-contentful: failed to list spaces: %w", err)
 	}
 
 	if len(res.Items) == 0 {
