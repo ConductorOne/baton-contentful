@@ -1,19 +1,21 @@
-package main
+package config
 
 import (
 	"github.com/conductorone/baton-sdk/pkg/field"
-	"github.com/spf13/viper"
 )
 
 var (
 	TokenField = field.StringField(
 		"token",
+		field.WithDisplayName("Contentful API token"),
 		field.WithDescription("The API token used to authenticate with the service."),
+		field.WithIsSecret(true),
 		field.WithRequired(true),
 	)
 
 	OrgIdField = field.StringField(
 		"organization-id",
+		field.WithDisplayName("Organization ID"),
 		field.WithDescription("The ID of the organization to use."),
 		field.WithRequired(true),
 	)
@@ -33,10 +35,11 @@ var (
 	FieldRelationships = []field.SchemaFieldRelationship{}
 )
 
-// ValidateConfig is run after the configuration is loaded, and should return an
-// error if it isn't valid. Implementing this function is optional, it only
-// needs to perform extra validations that cannot be encoded with configuration
-// parameters.
-func ValidateConfig(v *viper.Viper) error {
-	return nil
-}
+//go:generate go run ./gen
+var Config = field.NewConfiguration(
+	ConfigurationFields,
+	field.WithConstraints(FieldRelationships...),
+	field.WithConnectorDisplayName("Contentful"),
+	field.WithHelpUrl("/docs/baton/contentful"),
+	field.WithIconUrl("/static/app-icons/contentful.svg"),
+)

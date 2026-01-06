@@ -5,97 +5,21 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/conductorone/baton-contentful/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
-	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
+	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"google.golang.org/grpc/status"
 )
 
 const spaceAdmin = "admin"
 
 type spaceBuilder struct {
-	client *client.Client
-	// spaceId: role
-	spaceRoleCache map[string][]role
-	mu             *sync.Mutex
-}
-
-type role struct {
-	Id   string
-	Name string
-}
-
-func (o *spaceBuilder) fillCache(ctx context.Context, spaceID string) error {
-	var offset int
-	for {
-		res, err := o.client.ListSpaceRoles(ctx, spaceID, offset)
-		if err != nil {
-			return fmt.Errorf("baton-contentful: failed to list space roles: %w", err)
-		}
-
-		if len(res.Items) == 0 {
-			break
-		}
-
-		for _, role := range res.Items {
-			o.cacheSetRole(spaceID, role.Sys.ID, role.Name)
-		}
-
-		offset += len(res.Items)
-	}
-	return nil
-}
-
-func (o *spaceBuilder) cacheGetRoleName(ctx context.Context, spaceID, roleID string) (string, error) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	// if no roles are cached for the space, we need to fill the cache
-	if len(o.spaceRoleCache[spaceID]) == 0 {
-		if err := o.fillCache(ctx, spaceID); err != nil {
-			return "", fmt.Errorf("failed to fill cache: %w", err)
-		}
-	}
-
-	for _, role := range o.spaceRoleCache[spaceID] {
-		if role.Id == roleID {
-			return role.Name, nil
-		}
-	}
-
-	return "", fmt.Errorf("roleID %s not found in cache, spaceID: %s", roleID, spaceID)
-}
-
-func (o *spaceBuilder) cacheGetRoleID(ctx context.Context, spaceID, roleName string) (string, error) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	// if no roles are cached for the space, we need to fill the cache
-	if len(o.spaceRoleCache[spaceID]) == 0 {
-		if err := o.fillCache(ctx, spaceID); err != nil {
-			return "", fmt.Errorf("failed to fill cache: %w", err)
-		}
-	}
-
-	for _, role := range o.spaceRoleCache[spaceID] {
-		if role.Name == roleName {
-			return role.Id, nil
-		}
-	}
-	return "", fmt.Errorf("role %s not found in cache, spaceID: %s", roleName, spaceID)
-}
-
-func (o *spaceBuilder) cacheSetRole(spaceId, roleID, roleName string) {
-	o.spaceRoleCache[spaceId] = append(o.spaceRoleCache[spaceId], role{
-		Id:   roleID,
-		Name: roleName,
-	})
+	client         *client.Client
+	spaceRoleCache *spaceRoleCache
 }
 
 func (o *spaceBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
@@ -103,11 +27,11 @@ func (o *spaceBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
 }
 
 func spaceResource(space client.Space) *v2.Resource {
-	spaceResource, err := resourceSdk.NewGroupResource(
+	spaceResource, err := rs.NewGroupResource(
 		space.Name,
 		spaceResourceType,
 		space.Sys.ID,
-		[]resourceSdk.GroupTraitOption{},
+		[]rs.GroupTraitOption{},
 	)
 	if err != nil {
 		return nil
@@ -116,23 +40,24 @@ func spaceResource(space client.Space) *v2.Resource {
 	return spaceResource
 }
 
-func (o *spaceBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
+func (o *spaceBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, attrs rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
 	var offset int
 	var err error
+	pToken := attrs.PageToken
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 	}
 
 	res, err := o.client.ListSpaces(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
+		return nil, nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
 	}
 
 	if len(res.Items) == 0 {
-		return nil, "", nil, nil
+		return nil, nil, nil
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
@@ -141,16 +66,17 @@ func (o *spaceBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId
 		rv = append(rv, spaceResource(space))
 	}
 
-	return rv, nextOffset, nil, nil
+	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
-func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, attrs rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
 	var offset int
 	var err error
+	pToken := attrs.PageToken
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -168,11 +94,11 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 
 	res, err := o.client.ListSpaceRoles(ctx, resource.Id.Resource, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("failed to list space roles: %w", err)
+		return nil, nil, fmt.Errorf("failed to list space roles: %w", err)
 	}
 
 	if len(res.Items) == 0 {
-		return rv, "", nil, nil
+		return rv, nil, nil
 	}
 
 	for _, role := range res.Items {
@@ -186,40 +112,41 @@ func (o *spaceBuilder) Entitlements(ctx context.Context, resource *v2.Resource, 
 	}
 
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
-	return rv, nextOffset, nil, nil
+	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
-func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, attrs rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var offset int
 	var err error
+	pToken := attrs.PageToken
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 	}
 
 	res, err := o.client.ListSpaceMembers(ctx, resource.Id.Resource, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
+		return nil, nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
-		return nil, "", nil, nil
+		return nil, nil, nil
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
 	rv := []*v2.Grant{}
 	for _, spaceMembership := range res.Items {
-		principalID, err := resourceSdk.NewResourceID(userResourceType, spaceMembership.Sys.User.Sys.ID)
+		principalID, err := rs.NewResourceID(userResourceType, spaceMembership.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
+			return nil, nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
 		}
 
 		if spaceMembership.Admin {
-			principalID, err = resourceSdk.NewResourceID(userResourceType, spaceMembership.Sys.User.Sys.ID)
+			principalID, err = rs.NewResourceID(userResourceType, spaceMembership.Sys.User.Sys.ID)
 			if err != nil {
-				return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
+				return nil, nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
 			}
 			rv = append(rv, grant.NewGrant(
 				resource,
@@ -230,9 +157,9 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 		}
 
 		for _, role := range spaceMembership.Roles {
-			roleName, err := o.cacheGetRoleName(ctx, resource.Id.Resource, role.Sys.ID)
+			roleName, err := o.spaceRoleCache.GetCacheRoleName(ctx, attrs.Session, resource.Id.Resource, role.Sys.ID)
 			if err != nil {
-				return nil, "", nil, fmt.Errorf("baton-contentful: failed to get role name for role ID %s: %w", role.Sys.ID, err)
+				return nil, nil, fmt.Errorf("baton-contentful: failed to get role name for role ID %s: %w", role.Sys.ID, err)
 			}
 			rv = append(rv, grant.NewGrant(
 				resource,
@@ -241,7 +168,7 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken
 			))
 		}
 	}
-	return rv, nextOffset, nil, nil
+	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
 func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
@@ -261,7 +188,7 @@ func (o *spaceBuilder) Grant(ctx context.Context, principal *v2.Resource, entitl
 
 	// admin role is special, we don't need to look it up
 	if roleName != spaceAdmin {
-		roleID, err = o.cacheGetRoleID(ctx, spaceID, roleName)
+		roleID, err = o.spaceRoleCache.GetRoleID(ctx, spaceID, roleName)
 		if err != nil {
 			return nil, fmt.Errorf("baton-contentful: failed to get role ID for role %s: %w", roleName, err)
 		}
@@ -395,7 +322,7 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 	}
 
 	// For role-based grants, verify the role exists in the membership
-	roleID, err := o.cacheGetRoleID(ctx, spaceID, roleName)
+	roleID, err := o.spaceRoleCache.GetRoleID(ctx, spaceID, roleName)
 	if err != nil {
 		return nil, fmt.Errorf("baton-contentful: failed to get role ID for role %s: %w", roleName, err)
 	}
@@ -470,7 +397,6 @@ func (o *spaceBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations
 func newSpaceBuilder(client *client.Client) *spaceBuilder {
 	return &spaceBuilder{
 		client:         client,
-		mu:             &sync.Mutex{},
-		spaceRoleCache: make(map[string][]role),
+		spaceRoleCache: newSpaceRoleCache(client),
 	}
 }
