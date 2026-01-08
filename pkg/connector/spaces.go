@@ -156,10 +156,15 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, attrs 
 			continue
 		}
 
+		roleNames, err := o.spaceRoleCache.GetCacheRoleNames(ctx, attrs.Session, resource.Id.Resource)
+		if err != nil {
+			return nil, nil, fmt.Errorf("baton-contentful: failed to get role names: %w", err)
+		}
+
 		for _, role := range spaceMembership.Roles {
-			roleName, err := o.spaceRoleCache.GetCacheRoleName(ctx, attrs.Session, resource.Id.Resource, role.Sys.ID)
-			if err != nil {
-				return nil, nil, fmt.Errorf("baton-contentful: failed to get role name for role ID %s: %w", role.Sys.ID, err)
+			roleName, ok := roleNames[role.Sys.ID]
+			if !ok {
+				return nil, nil, fmt.Errorf("baton-contentful: role ID %s not found in cache", role.Sys.ID)
 			}
 			rv = append(rv, grant.NewGrant(
 				resource,

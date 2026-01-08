@@ -63,33 +63,31 @@ func (c *spaceRoleCache) fillCache(ctx context.Context, spaceID string, sessionS
 	return nil
 }
 
-func (c *spaceRoleCache) GetCacheRoleName(ctx context.Context, sessionStorage sessions.SessionStore, spaceID string, roleID string) (string, error) {
-	// if no roles are cached for the space, we need to fill the cache
+func (c *spaceRoleCache) GetCacheRoleNames(ctx context.Context, sessionStorage sessions.SessionStore, spaceID string) (map[string]string, error) {
 	spaceRoles, found, err := session.GetJSON[[]role](ctx, sessionStorage, spaceID, sessions.WithPrefix("contentful_space_role_cache"))
 	if err != nil {
-		return "", fmt.Errorf("failed to get space role cache: %w", err)
+		return nil, fmt.Errorf("failed to get space role cache: %w", err)
 	}
 	if !found {
 		if err := c.fillCache(ctx, spaceID, sessionStorage); err != nil {
-			return "", fmt.Errorf("failed to fill cache: %w", err)
+			return nil, fmt.Errorf("failed to fill cache: %w", err)
 		}
 		// Re-fetch the data from cache after filling it
 		spaceRoles, found, err = session.GetJSON[[]role](ctx, sessionStorage, spaceID, sessions.WithPrefix("contentful_space_role_cache"))
 		if err != nil {
-			return "", fmt.Errorf("failed to get space role cache after fill: %w", err)
+			return nil, fmt.Errorf("failed to get space role cache after fill: %w", err)
 		}
 		if !found {
-			return "", fmt.Errorf("space role cache still not found after fill for spaceID: %s", spaceID)
+			return nil, fmt.Errorf("space role cache still not found after fill for spaceID: %s", spaceID)
 		}
 	}
 
+	roleNames := make(map[string]string)
 	for _, role := range spaceRoles {
-		if role.Id == roleID {
-			return role.Name, nil
-		}
+		roleNames[role.Id] = role.Name
 	}
 
-	return "", fmt.Errorf("roleID %s not found in cache, spaceID: %s", roleID, spaceID)
+	return roleNames, nil
 }
 
 // This method uses an in-memory cache instead of sessionStorage.
