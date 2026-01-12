@@ -144,10 +144,6 @@ func (o *spaceBuilder) Grants(ctx context.Context, resource *v2.Resource, attrs 
 		}
 
 		if spaceMembership.Admin {
-			principalID, err = rs.NewResourceID(userResourceType, spaceMembership.Sys.User.Sys.ID)
-			if err != nil {
-				return nil, nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", spaceMembership.Sys.User.Sys.ID, err)
-			}
 			rv = append(rv, grant.NewGrant(
 				resource,
 				spaceAdmin,

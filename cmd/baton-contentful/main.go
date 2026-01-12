@@ -14,7 +14,7 @@ var version = "dev"
 func main() {
 	ctx := context.Background()
 	config.RunConnector(ctx,
-		"baton-jira",
+		"baton-contentful",
 		version,
 		cfg.Config,
 		connector.New,
