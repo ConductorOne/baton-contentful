@@ -1,6 +1,11 @@
-name: Test Baton contentful Integration
+name: ci
 
-on: pull_request
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches:
+      - main
 
 env:
   BATON_LOG_LEVEL: debug

@@ -8,10 +8,9 @@ import (
 	"github.com/conductorone/baton-contentful/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
-	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
+	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
 
 const (
@@ -30,11 +29,11 @@ func (o *orgBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
 }
 
 func orgResource(org client.Organization) *v2.Resource {
-	orgResource, err := resourceSdk.NewGroupResource(
+	orgResource, err := rs.NewGroupResource(
 		org.Name,
 		orgResourceType,
 		org.Sys.ID,
-		[]resourceSdk.GroupTraitOption{},
+		[]rs.GroupTraitOption{},
 	)
 	if err != nil {
 		return nil
@@ -45,23 +44,24 @@ func orgResource(org client.Organization) *v2.Resource {
 
 // List returns all the users from the database as resource objects.
 // Users include a UserTrait because they are the 'shape' of a standard user.
-func (o *orgBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
+func (o *orgBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, attrs rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
 	var offset int
 	var err error
+	pToken := attrs.PageToken
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 	}
 
 	res, err := o.client.ListOrganizations(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
+		return nil, nil, fmt.Errorf("baton-contentful: failed to list organizations: %w", err)
 	}
 
 	if len(res.Items) == 0 {
-		return nil, "", nil, nil
+		return nil, nil, nil
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
@@ -70,10 +70,10 @@ func (o *orgBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, 
 		rv = append(rv, orgResource(org))
 	}
 
-	return rv, nextOffset, nil, nil
+	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
-func (o *orgBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (o *orgBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
 	// owner, admin, developer, member
 	return []*v2.Entitlement{
 		entitlement.NewAssignmentEntitlement(
@@ -104,34 +104,35 @@ func (o *orgBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *p
 			entitlement.WithDescription(fmt.Sprintf("Member of the %s organization", resource.DisplayName)),
 			entitlement.WithDisplayName(fmt.Sprintf("Member of the %s organization", resource.DisplayName)),
 		),
-	}, "", nil, nil
+	}, nil, nil
 }
 
-func (o *orgBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (o *orgBuilder) Grants(ctx context.Context, resource *v2.Resource, attrs rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var offset int
 	var err error
+	pToken := attrs.PageToken
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 	}
 
 	res, err := o.client.ListOrganizationMemberships(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
+		return nil, nil, fmt.Errorf("baton-contentful: failed to list org memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
-		return nil, "", nil, nil
+		return nil, nil, nil
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
 	rv := []*v2.Grant{}
 	for _, orgMembership := range res.Items {
-		principalID, err := resourceSdk.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
+		principalID, err := rs.NewResourceID(userResourceType, orgMembership.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
+			return nil, nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", orgMembership.Sys.User.Sys.ID, err)
 		}
 		rv = append(rv, grant.NewGrant(
 			resource,
@@ -139,7 +140,7 @@ func (o *orgBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *
 			principalID,
 		))
 	}
-	return rv, nextOffset, nil, nil
+	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
 // can't provision organization membership, it requires creating an account

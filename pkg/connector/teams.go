@@ -8,10 +8,9 @@ import (
 	"github.com/conductorone/baton-contentful/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
-	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
+	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
 
 const teamMembership = "member"
@@ -25,12 +24,12 @@ func (o *teamBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
 }
 
 func teamResource(team client.Team) *v2.Resource {
-	teamResource, err := resourceSdk.NewGroupResource(
+	teamResource, err := rs.NewGroupResource(
 		team.Name,
 		teamResourceType,
 		team.Sys.ID,
-		[]resourceSdk.GroupTraitOption{
-			resourceSdk.WithGroupProfile(
+		[]rs.GroupTraitOption{
+			rs.WithGroupProfile(
 				map[string]interface{}{
 					"description": team.Description,
 				},
@@ -44,24 +43,25 @@ func teamResource(team client.Team) *v2.Resource {
 	return teamResource
 }
 
-func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
+func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, attrs rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
 	var offset int
 	var err error
+	pToken := attrs.PageToken
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 	}
 
 	res, err := o.client.ListTeams(ctx, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list users: %w", err)
+		return nil, nil, fmt.Errorf("baton-contentful: failed to list teams: %w", err)
 	}
 	items := res.Items
 
 	if len(items) == 0 {
-		return nil, "", nil, nil
+		return nil, nil, nil
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(items))
 
@@ -70,11 +70,10 @@ func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		rv[i] = teamResource(elem)
 	}
 
-	return rv, nextOffset, nil, nil
+	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
-// Entitlements always returns an empty slice for users.
-func (o *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (o *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
 	return []*v2.Entitlement{
 		entitlement.NewAssignmentEntitlement(
 			resource,
@@ -83,36 +82,36 @@ func (o *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *
 			entitlement.WithDescription(fmt.Sprintf("Member of %s team", resource.DisplayName)),
 			entitlement.WithDisplayName(fmt.Sprintf("Member of %s team", resource.DisplayName)),
 		),
-	}, "", nil, nil
+	}, nil, nil
 }
 
-// Grants always returns an empty slice for users since they don't have any entitlements.
-func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, attrs rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var offset int
 	var err error
+	pToken := attrs.PageToken
 	if pToken.Token != "" {
 		offset, err = strconv.Atoi(pToken.Token)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 	}
 
 	teamID := resource.Id.Resource
 	res, err := o.client.ListTeamMembershipsByTeam(ctx, teamID, offset)
 	if err != nil {
-		return nil, "", nil, fmt.Errorf("baton-contentful: failed to list team memberships: %w", err)
+		return nil, nil, fmt.Errorf("baton-contentful: failed to list team memberships: %w", err)
 	}
 
 	if len(res.Items) == 0 {
-		return nil, "", nil, nil
+		return nil, nil, nil
 	}
 	nextOffset := fmt.Sprintf("%d", offset+len(res.Items))
 
 	rv := []*v2.Grant{}
 	for _, tm := range res.Items {
-		principalID, err := resourceSdk.NewResourceID(userResourceType, tm.Sys.User.Sys.ID)
+		principalID, err := rs.NewResourceID(userResourceType, tm.Sys.User.Sys.ID)
 		if err != nil {
-			return nil, "", nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", tm.Sys.User.Sys.ID, err)
+			return nil, nil, fmt.Errorf("baton-contentful: failed to create resource ID for user %v: %w", tm.Sys.User.Sys.ID, err)
 		}
 		rv = append(rv, grant.NewGrant(
 			resource,
@@ -120,7 +119,7 @@ func (o *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 			principalID,
 		))
 	}
-	return rv, nextOffset, nil, nil
+	return rv, &rs.SyncOpResults{NextPageToken: nextOffset}, nil
 }
 
 func (o *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
