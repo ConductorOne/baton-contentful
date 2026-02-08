@@ -11,7 +11,7 @@ import (
 )
 
 func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -42,7 +42,7 @@ func (c *Client) ListTeams(ctx context.Context, offset int) (*GetTeamsResponse, 
 }
 
 func (c *Client) ListTeamMembershipsByTeam(ctx context.Context, teamID string, offset int) (*GetTeamMembershipsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -77,7 +77,7 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 		"organizationMembershipId": orgMembershipID,
 	}
 
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -106,7 +106,7 @@ func (c *Client) CreateTeamMembership(ctx context.Context, teamID string, orgMem
 }
 
 func (c *Client) GetTeamMembershipByUser(ctx context.Context, orgMembershipID string) (*GetTeamMembershipsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -136,7 +136,7 @@ func (c *Client) GetTeamMembershipByUser(ctx context.Context, orgMembershipID st
 }
 
 func (c *Client) DeleteTeamMembership(ctx context.Context, teamID, teamMembershipID string) error {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse base URL: %w", err)
 	}

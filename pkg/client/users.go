@@ -12,7 +12,7 @@ import (
 )
 
 func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -43,7 +43,7 @@ func (c *Client) ListUsers(ctx context.Context, offset int) (*GetUsersResponse, 
 }
 
 func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -73,7 +73,7 @@ func (c *Client) GetUserByID(ctx context.Context, userID string) (*GetUsersRespo
 }
 
 func (c *Client) CreateInvitation(ctx context.Context, body *CreateInvitationBody) (*Invitation, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}

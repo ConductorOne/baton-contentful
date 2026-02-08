@@ -91,7 +91,7 @@ func (d *Connector) Validate(ctx context.Context) (annotations.Annotations, erro
 }
 
 func New(ctx context.Context, cc *cfg.Contentful, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
-	clientConnector, err := client.New(ctx, cc.OrganizationId, cc.Token)
+	clientConnector, err := client.New(ctx, cc.OrganizationId, cc.Token, cc.BaseUrl)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganizationsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -43,7 +43,7 @@ func (c *Client) ListOrganizations(ctx context.Context, offset int) (*GetOrganiz
 
 // https://www.contentful.com/developers/docs/references/user-management-api/#/reference/organization-memberships
 func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*GetOrganizationMembershipsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -74,7 +74,7 @@ func (c *Client) ListOrganizationMemberships(ctx context.Context, offset int) (*
 }
 
 func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID string) (*GetOrganizationMembershipsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -104,7 +104,7 @@ func (c *Client) GetOrganizationMembershipByUser(ctx context.Context, userID str
 }
 
 func (c *Client) DeleteOrganizationMembership(ctx context.Context, orgMembershipID string) error {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse base URL: %w", err)
 	}
