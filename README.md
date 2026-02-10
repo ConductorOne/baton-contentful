@@ -1,6 +1,6 @@
 ![Baton Logo](./baton-logo.png)
 
-# `baton-contentful` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-contentful.svg)](https://pkg.go.dev/github.com/conductorone/baton-contentful) ![main ci](https://github.com/conductorone/baton-contentful/actions/workflows/main.yaml/badge.svg)
+# `baton-contentful` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-contentful.svg)](https://pkg.go.dev/github.com/conductorone/baton-contentful) ![ci](https://github.com/conductorone/baton-contentful/actions/workflows/ci.yaml/badge.svg) ![verify](https://github.com/conductorone/baton-contentful/actions/workflows/verify.yaml/badge.svg)
 
 `baton-contentful` is a connector for built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
 
