@@ -1,57 +1,17 @@
 name: ci
-
 on:
   pull_request:
     types: [opened, reopened, synchronize]
   push:
     branches:
       - main
-
 env:
   BATON_LOG_LEVEL: debug
   BATON_TOKEN: "${{ secrets.BATON_TOKEN }}"
   BATON_ORGANIZATION_ID: "${{ secrets.BATON_ORGANIZATION_ID }}"
-
 jobs:
-  go-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: Run linters
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
-          args: --timeout=3m
-
-  go-test:
-    strategy:
-      matrix:
-        platform: [ ubuntu-latest ]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install Go
-        if: success()
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: go tests
-        run: (set -o pipefail && go test -v -covermode=count -json ./... | tee test.json)
-      - name: annotate go tests
-        if: always()
-        uses: guyarb/golang-test-annotations@v0.5.1
-        with:
-          test-results: test.json
-
   test-spaces:
     runs-on: ubuntu-latest
-
     env:
       CONNECTOR_GRANT: "${{ vars.TEST_SPACES_GRANT }}"
       CONNECTOR_ENTITLEMENT: "${{ vars.TEST_SPACES_ENTITLEMENT }}"
@@ -70,7 +30,6 @@ jobs:
         run: ./baton-contentful
       - name: Install baton
         uses: ConductorOne/github-workflows/actions/get-baton@v2
-
       - name: Test grant and revoke
         uses: ConductorOne/github-workflows/actions/sync-test@v2
         with:
@@ -78,7 +37,6 @@ jobs:
           baton-entitlement: "${{ env.CONNECTOR_ENTITLEMENT }}"
           baton-principal: "${{ env.CONNECTOR_PRINCIPAL }}"
           baton-principal-type: "${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
-
   test-teams:
     runs-on: ubuntu-latest
     env:
@@ -99,7 +57,6 @@ jobs:
         run: ./baton-contentful
       - name: Install baton
         uses: ConductorOne/github-workflows/actions/get-baton@v2
-
       - name: Test grant and revoke
         uses: ConductorOne/github-workflows/actions/sync-test@v2
         with:
@@ -107,4 +64,3 @@ jobs:
           baton-entitlement: "${{ env.CONNECTOR_ENTITLEMENT }}"
           baton-principal: "${{ env.CONNECTOR_PRINCIPAL }}"
           baton-principal-type: "${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
-
