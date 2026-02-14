@@ -23,6 +23,7 @@ var (
 	BaseURLField = field.StringField(
 		"base-url",
 		field.WithDescription("Override the Contentful API URL (for testing)"),
+		field.WithHidden(true),
 	)
 
 	// ConfigurationFields defines the external configuration required for the
