@@ -11,7 +11,7 @@ import (
 )
 
 func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -44,7 +44,7 @@ func (c *Client) ListSpaces(ctx context.Context, offset int) (*GetSpacesResponse
 // https://www.contentful.com/developers/docs/references/content-management-api/#/reference/roles/roles-collection/get-all-roles/console/curl
 // https://www.contentful.com/help/roles/space-roles-and-permissions/
 func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string, offset int) (*GetSpaceRolesResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -75,7 +75,7 @@ func (c *Client) ListSpaceRoles(ctx context.Context, spaceID string, offset int)
 }
 
 func (c *Client) ListSpaceMembers(ctx context.Context, spaceID string, offset int) (*GetSpaceMembershipsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -121,7 +121,7 @@ func (c *Client) CreateSpaceMembership(ctx context.Context, spaceID, email strin
 		}
 	}
 
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -160,7 +160,7 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 		body["roles"] = roles
 	}
 
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -188,7 +188,7 @@ func (c *Client) UpdateSpaceMembership(ctx context.Context, spaceID, spaceMember
 }
 
 func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMembershipID string) error {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse base URL: %w", err)
 	}
@@ -212,7 +212,7 @@ func (c *Client) DeleteSpaceMembership(ctx context.Context, spaceID, spaceMember
 }
 
 func (c *Client) GetSpaceMembershipByUser(ctx context.Context, spaceID, userID string) (*GetSpaceMembershipsResponse, error) {
-	reqURL, err := url.Parse(BaseURL)
+	reqURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %w", err)
 	}

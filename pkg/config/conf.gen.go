@@ -6,6 +6,7 @@ import "reflect"
 type Contentful struct {
 	Token string `mapstructure:"token"`
 	OrganizationId string `mapstructure:"organization-id"`
+	BaseUrl string `mapstructure:"base-url"`
 }
 
 func (c *Contentful) findFieldByTag(tagValue string) (any, bool) {
