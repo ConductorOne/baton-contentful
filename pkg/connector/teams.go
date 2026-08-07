@@ -28,13 +28,10 @@ func teamResource(team client.Team) *v2.Resource {
 		team.Name,
 		teamResourceType,
 		team.Sys.ID,
-		[]rs.GroupTraitOption{
-			rs.WithGroupProfile(
-				map[string]interface{}{
-					"description": team.Description,
-				},
-			),
-		},
+		[]rs.GroupTraitOption{},
+		rs.WithResourceProfile(map[string]interface{}{
+			"description": team.Description,
+		}),
 	)
 	if err != nil {
 		return nil
