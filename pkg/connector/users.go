@@ -32,8 +32,6 @@ func (o *userBuilder) userResource(ctx context.Context, user client.User) *v2.Re
 
 	traits := []rs.UserTraitOption{
 		rs.WithEmail(user.Email, true),
-		rs.WithUserProfile(profile),
-		rs.WithCreatedAt(user.Sys.CreatedAt),
 	}
 
 	lastActive := o.client.GetLastActiveAt(ctx, user.Sys.ID)
@@ -46,6 +44,8 @@ func (o *userBuilder) userResource(ctx context.Context, user client.User) *v2.Re
 		userResourceType,
 		user.Sys.ID,
 		traits,
+		rs.WithResourceProfile(profile),
+		rs.WithResourceCreatedAt(user.Sys.CreatedAt),
 	)
 	if err != nil {
 		return nil
