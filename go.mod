@@ -3,7 +3,7 @@ module github.com/conductorone/baton-contentful
 go 1.27.1
 
 require (
-	github.com/conductorone/baton-sdk v0.32.0
+	github.com/conductorone/baton-sdk v0.32.1
 	github.com/ennyjfrick/ruleguard-logfatal v0.0.2
 	github.com/quasilyte/go-ruleguard/dsl v0.3.23
 	google.golang.org/grpc v1.83.2
